@@ -1,0 +1,16 @@
+{
+  "name": "semana01-proyecto",
+  "version": "1.0.0",
+  "description": "Proyecto semanal — Procesador de datos con Node.js + TypeScript",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc --noEmit",
+    "start": "node dist/src/index.js"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.21",
+    "tsx": "4.19.4",
+    "typescript": "5.8.3"
+  }
+}
