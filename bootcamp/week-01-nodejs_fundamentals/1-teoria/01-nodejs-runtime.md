@@ -51,6 +51,8 @@ const [user, posts] = await Promise.all([
 
 El Event Loop es el mecanismo central que permite a Node.js ejecutar operaciones asíncronas sin bloquear el hilo.
 
+![Node.js Event Loop — fases y colas de tareas](../0-assets/01-event-loop.svg)
+
 ```
 ┌─────────────────────────────────────────┐
 │              Código JavaScript           │

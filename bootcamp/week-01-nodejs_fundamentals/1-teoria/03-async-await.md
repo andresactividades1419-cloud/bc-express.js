@@ -12,6 +12,8 @@ Al finalizar este archivo, comprenderás:
 
 ## 📋 La Evolución del Código Asíncrono
 
+![Evolución de patrones asíncronos: callbacks → Promises → async/await](../0-assets/02-async-patterns.svg)
+
 ### 1. Callbacks (el pasado — evitar)
 
 ```ts
