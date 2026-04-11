@@ -12,6 +12,8 @@ Al finalizar este archivo, comprenderás:
 
 ## 📋 CommonJS vs ES Modules
 
+![CommonJS vs ES Modules — sintaxis y diferencias clave](../0-assets/03-esm-vs-cjs.svg)
+
 Node.js tuvo históricamente dos sistemas de módulos:
 
 ```ts

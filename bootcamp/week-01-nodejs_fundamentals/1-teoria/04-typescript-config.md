@@ -129,6 +129,8 @@ async function paginate<T>(
 
 ## 📋 Flujo de Desarrollo
 
+![Flujo de trabajo con TypeScript — dev, verificación de tipos y build](../0-assets/04-typescript-workflow.svg)
+
 ```bash
 # ── Desarrollo (hot-reload con tsx) ──────────────────────────
 pnpm dev          # ejecuta: tsx watch src/index.ts
