@@ -35,7 +35,7 @@
   <text x="460" y="378" font-family="Inter, sans-serif" font-size="15" font-weight="700" fill="#34d399" text-anchor="middle">Unit Tests</text>
   <text x="460" y="399" font-family="Inter, sans-serif" font-size="11" fill="#9ca3af" text-anchor="middle">Jest + Mocks — servicios aislados de la DB</text>
   <text x="460" y="418" font-family="Inter, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">auth.service.test.ts · user.service.test.ts · items.service.test.ts</text>
-  <text x="460" y="436" font-family="Inter, sans-serif" font-size="11" fill="#4b5563" text-anchor="middle">🚀 Rápidos &nbsp; 💵 Baratos &nbsp; 🔒 Aislados</text>
+  <text x="460" y="436" font-family="Inter, sans-serif" font-size="11" fill="#4b5563" text-anchor="middle">&#x1F680; Rápidos &#160;&#160; &#x1F4B5; Baratos &#160;&#160; &#x1F512; Aislados</text>
 
   <!-- Quantity labels on left -->
   <text x="158" y="158" font-family="Inter, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">Pocos</text>
