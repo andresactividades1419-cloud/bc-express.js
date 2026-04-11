@@ -10,6 +10,10 @@
   <a href="#"><img src="https://img.shields.io/badge/Express-000000?logo=express&logoColor=white" alt="Express"></a>
 </p>
 
+<p align="center">
+  <a href="README_EN.md"><img src="https://img.shields.io/badge/🇺🇸_English-0969DA?style=for-the-badge&logoColor=white" alt="English Version"></a>
+</p>
+
 ---
 
 ## 📋 Descripción
