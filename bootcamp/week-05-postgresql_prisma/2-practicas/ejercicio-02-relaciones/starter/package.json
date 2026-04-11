@@ -1,0 +1,26 @@
+{
+  "name": "ejercicio-02-relaciones",
+  "version": "1.0.0",
+  "description": "Ejercicio 02 - Week 05: Relaciones en Prisma (1:N Category → Products)",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "7.7.0",
+    "express": "5.1.0",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.3",
+    "@types/node": "22.15.21",
+    "prisma": "7.7.0",
+    "tsx": "4.19.4",
+    "typescript": "5.8.3"
+  }
+}
