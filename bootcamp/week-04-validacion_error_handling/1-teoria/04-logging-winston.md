@@ -131,6 +131,18 @@ logger.debug(`Buscando producto con id ${id}`);
 
 ---
 
+## 🔒 Nota de seguridad — OWASP A09 (Security Logging and Monitoring Failures)
+
+Sin logs estructurados, un intento de intrusión pasa desapercibido hasta que ya
+causó daño — A09 no es "no tener logs", es tenerlos sin la información que
+permite detectar un patrón de ataque a tiempo (intentos de login fallidos,
+accesos 403 repetidos, IPs sospechosas). Nunca loguees contraseñas, tokens ni
+datos personales completos — un log filtrado es una fuga de datos en sí misma.
+
+> Tratamiento completo de OWASP Top 10 en la semana 08.
+
+---
+
 ## ✅ Checklist de verificación
 
 - [ ] `winston@3.19.0` y `morgan@1.10.1` instalados con versiones exactas

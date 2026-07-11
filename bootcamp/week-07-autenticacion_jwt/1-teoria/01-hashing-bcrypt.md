@@ -149,6 +149,19 @@ export async function login(dto: LoginDto): Promise<string> {
 }
 ```
 
+## 🔒 Nota de seguridad — OWASP A02 (Cryptographic Failures)
+
+Guardar contraseñas en texto plano o con un hash débil (MD5, SHA1 sin salt) es
+el ejemplo canónico de A02 — si la base de datos se filtra, todas las cuentas
+quedan comprometidas de inmediato. bcrypt con salt automático y `saltRounds`
+adecuado es la mitigación estándar de la industria para este caso específico;
+lo mismo aplica a cualquier secreto (`JWT_SECRET`, API keys) — nunca en el
+código fuente, siempre en variables de entorno no comiteadas.
+
+> Tratamiento completo de OWASP Top 10 en la semana 08.
+
+---
+
 ## ✅ Checklist de Verificación
 
 - [ ] `bcrypt.hash()` con `saltRounds >= 10`
