@@ -19,7 +19,7 @@ export async function getAll(_req: Request, res: Response, next: NextFunction): 
   }
 }
 
-export async function getById(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getById(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   // TODO: Implementar búsqueda por ID
   // Retornar 404 si no existe
   try {
@@ -45,7 +45,7 @@ export async function create(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function update(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   // TODO: Implementar actualización
   // Verificar que el usuario sea el dueño O sea admin
   try {
@@ -70,7 +70,7 @@ export async function update(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-export async function remove(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function remove(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   // TODO: Implementar eliminación (solo admin — enforced en la ruta)
   try {
     const item = await itemService.remove(req.params.id);

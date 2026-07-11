@@ -15,7 +15,7 @@ export const authService = {
     const { password: _, ...userSafe } = user;
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, env.JWT_SECRET, {
       expiresIn: env.JWT_EXPIRES_IN,
-    });
+    } as jwt.SignOptions);
     return { user: userSafe, token };
   },
 
@@ -29,7 +29,7 @@ export const authService = {
     const { password: _, ...userSafe } = user;
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, env.JWT_SECRET, {
       expiresIn: env.JWT_EXPIRES_IN,
-    });
+    } as jwt.SignOptions);
     return { user: userSafe, token };
   },
 };

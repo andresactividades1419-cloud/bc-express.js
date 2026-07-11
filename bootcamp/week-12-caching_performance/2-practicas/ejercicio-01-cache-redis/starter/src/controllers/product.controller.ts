@@ -24,7 +24,7 @@ export async function getAll(_req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export async function getById(req: Request, res: Response, next: NextFunction) {
+export async function getById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
   try {
     const product = await productStore.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
@@ -55,7 +55,7 @@ export async function create(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export async function remove(req: Request, res: Response, next: NextFunction) {
+export async function remove(req: Request<{ id: string }>, res: Response, next: NextFunction) {
   try {
     const deleted = await productStore.remove(req.params.id);
     if (!deleted) return res.status(404).json({ message: 'Product not found' });

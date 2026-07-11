@@ -14,7 +14,7 @@ export async function getAll(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-export async function getById(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getById(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   try {
     const item = await itemsService.getById(req.params.id);
     res.json({ status: 'success', data: { item } });
@@ -34,7 +34,7 @@ export async function create(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function update(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!req.user) throw new AppError(401, 'No autenticado');
     const { body } = updateItemSchema.parse({ body: req.body });
@@ -45,7 +45,7 @@ export async function update(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-export async function updateImage(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function updateImage(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!req.user) throw new AppError(401, 'No autenticado');
     if (!req.file) throw new AppError(400, 'No se proporcionó ninguna imagen');
@@ -56,7 +56,7 @@ export async function updateImage(req: Request, res: Response, next: NextFunctio
   }
 }
 
-export async function remove(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function remove(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!req.user) throw new AppError(401, 'No autenticado');
     await itemsService.remove(req.params.id, req.user.userId);

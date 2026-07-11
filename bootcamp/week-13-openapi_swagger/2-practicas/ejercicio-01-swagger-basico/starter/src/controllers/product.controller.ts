@@ -12,7 +12,7 @@ export function getAll(_req: Request, res: Response): void {
   res.json(store.findAll());
 }
 
-export function getById(req: Request, res: Response): void {
+export function getById(req: Request<{ id: string }>, res: Response): void {
   const product = store.findById(req.params.id);
   if (!product) {
     res.status(404).json({ error: 'Product not found' });
@@ -31,7 +31,7 @@ export function create(req: Request, res: Response): void {
   res.status(201).json(product);
 }
 
-export function remove(req: Request, res: Response): void {
+export function remove(req: Request<{ id: string }>, res: Response): void {
   const deleted = store.remove(req.params.id);
   if (!deleted) {
     res.status(404).json({ error: 'Product not found' });

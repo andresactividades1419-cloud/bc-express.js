@@ -18,7 +18,7 @@ export async function getAll(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-export async function markRead(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function markRead(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   // TODO: Marcar notificación como leída
   // Si no existe o no pertenece al usuario: 404
   try {

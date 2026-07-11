@@ -41,7 +41,7 @@ export async function getAll(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-export async function getById(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getById(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   try {
     const item = await itemsService.getById(req.params.id);
     res.json(item);
@@ -60,7 +60,7 @@ export async function create(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function update(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   try {
     const dto = updateItemSchema.parse(req.body);
     const item = await itemsService.update(req.params.id, dto);
@@ -70,7 +70,7 @@ export async function update(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-export async function remove(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function remove(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   try {
     await itemsService.remove(req.params.id);
     res.status(204).send();

@@ -27,7 +27,7 @@ productRouter.get('/', async (_req: Request, res: Response) => {
 });
 
 // GET /products/:id
-productRouter.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+productRouter.get('/:id', async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
   // ❌ PROBLEMA: Si no existe, Prisma lanza P2025 sin formato
   const product = await prisma.product.findUniqueOrThrow({
     where: { id: req.params.id },
