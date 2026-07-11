@@ -40,7 +40,7 @@ export function getAll(_req: Request, res: Response): void {
   res.json(itemsStore.findAll());
 }
 
-export function getById(req: Request, res: Response): void {
+export function getById(req: Request<{ id: string }>, res: Response): void {
   const item = itemsStore.findById(req.params.id);
   if (!item) { res.status(404).json({ error: 'Item not found' }); return; }
   res.json(item);
@@ -56,7 +56,7 @@ export function create(req: Request, res: Response): void {
   res.status(201).json(item);
 }
 
-export function remove(req: Request, res: Response): void {
+export function remove(req: Request<{ id: string }>, res: Response): void {
   const deleted = itemsStore.remove(req.params.id);
   if (!deleted) { res.status(404).json({ error: 'Item not found' }); return; }
   res.status(204).send();

@@ -24,7 +24,7 @@ export async function getAll(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-export async function getById(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getById(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   // TODO: Obtener ítem por id
   // Si no existe: 404
   try {
@@ -48,7 +48,7 @@ export async function create(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-export async function remove(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function remove(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   // TODO: Eliminar ítem (solo el propietario)
   try {
     if (!req.user) throw new AppError(401, 'No autenticado');

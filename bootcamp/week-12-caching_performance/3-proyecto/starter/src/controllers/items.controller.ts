@@ -14,7 +14,7 @@ export async function getAll(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-export async function getById(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getById(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   try {
     const item = await itemsService.findById(req.params.id);
     res.json(item);
@@ -34,7 +34,7 @@ export async function create(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function update(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   try {
     // TODO: Parsear body con updateItemSchema y llamar itemsService.update
     const dto = updateItemSchema.parse(req.body);
@@ -45,7 +45,7 @@ export async function update(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-export async function remove(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function remove(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
   try {
     await itemsService.delete(req.params.id);
     res.status(204).send();
