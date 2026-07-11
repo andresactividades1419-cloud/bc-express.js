@@ -139,9 +139,11 @@ bootcamp/week-XX-tema_principal/
 
 ### Prerrequisitos
 
-- **Node.js 22+** instalado
-- **pnpm** como gestor de paquetes (`npm install -g pnpm`)
-- **Docker** para levantar PostgreSQL y Redis en local
+- **Node.js 22+** instalado (`.nvmrc` en la raíz — usa `nvm use`)
+- **pnpm 10.x** como único gestor de paquetes (nunca `npm`/`yarn`) — actívalo con
+  Corepack: `corepack enable && corepack prepare pnpm@10.34.5 --activate`
+- **Docker** para levantar PostgreSQL/MongoDB/Redis en local — ver
+  [`docs/setup`](docs/setup) para la ruta con o sin Docker
 - **Git** para control de versiones
 - **VS Code** (recomendado) con extensiones incluidas
 - **Thunder Client** o **Postman** para probar endpoints
@@ -275,6 +277,8 @@ Ver el archivo [LICENSE](LICENSE) para el texto completo.
 - [🤖 Instrucciones de Copilot](.github/copilot-instructions.md)
 - [📜 Código de Conducta](CODE_OF_CONDUCT.md)
 - [🔒 Política de Seguridad](SECURITY.md)
+- [🛠️ Setup del entorno (con/sin Docker)](docs/setup)
+- [📌 Política de versiones de dependencias](docs/politica-versiones-dependencias.md)
 
 ---
 
