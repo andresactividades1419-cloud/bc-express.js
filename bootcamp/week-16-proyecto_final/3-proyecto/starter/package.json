@@ -3,15 +3,20 @@
   "version": "1.0.0",
   "description": "Proyecto final bootcamp Express — API REST completa con dominio asignado",
   "main": "dist/server.js",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "pnpm@10.34.5",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "jest --forceExit",
-    "test:coverage": "jest --coverage --forceExit"
+    "test:coverage": "jest --coverage --forceExit",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@prisma/client": "6.7.0",
+    "@prisma/client": "6.8.2",
     "bcrypt": "5.1.1",
     "compression": "1.8.0",
     "cookie-parser": "1.4.7",
@@ -23,7 +28,7 @@
     "jsonwebtoken": "9.0.2",
     "morgan": "1.10.0",
     "winston": "3.17.0",
-    "zod": "3.24.2"
+    "zod": "4.3.6"
   },
   "devDependencies": {
     "@types/bcrypt": "5.0.2",
@@ -37,15 +42,17 @@
     "@types/node": "22.15.3",
     "@types/supertest": "6.0.3",
     "jest": "29.7.0",
-    "prisma": "6.7.0",
+    "prisma": "6.8.2",
     "supertest": "7.1.0",
     "ts-jest": "29.3.2",
     "ts-node-dev": "2.0.0",
-    "typescript": "5.8.2"
+    "typescript": "5.8.3"
   },
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "testMatch": ["**/__tests__/**/*.test.ts"]
+    "testMatch": [
+      "**/__tests__/**/*.test.ts"
+    ]
   }
 }

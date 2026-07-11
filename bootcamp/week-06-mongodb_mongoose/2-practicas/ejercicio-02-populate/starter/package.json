@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Ejercicio 02 - Populate: Productos con Categorías",
   "main": "src/server.ts",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "pnpm@10.34.5",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
