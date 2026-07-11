@@ -254,6 +254,19 @@ export async function remove(id: number) {
 
 ---
 
+## 8. 🔒 Nota de seguridad — OWASP A03 (Injection)
+
+Toda query de este archivo pasa por el Prisma Client tipado — nunca se
+concatena SQL a mano. Esa es la mitigación real de A03 (SQL Injection):
+Prisma genera queries parametrizadas por diseño, así que un `where: { name:
+userInput }` es seguro incluso si `userInput` contiene `'; DROP TABLE --`. La
+excepción peligrosa es `prisma.$queryRawUnsafe()` — evítalo; si necesitas SQL
+crudo, usa `prisma.$queryRaw` con template literals (parametrizado).
+
+> Tratamiento completo de OWASP Top 10 en la semana 08.
+
+---
+
 ## ✅ Checklist de Verificación
 
 - [ ] `findMany` con `skip`/`take` retorna datos paginados

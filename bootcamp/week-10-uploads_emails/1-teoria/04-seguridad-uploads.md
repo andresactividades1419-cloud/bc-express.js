@@ -189,6 +189,17 @@ export async function uploadProduct(req, res, next) {
 | Archivos temporales huérfanos | Limpiar en bloque `catch` |
 | Contenido malicioso en producción | Servir desde CDN, no desde el servidor |
 
+## 🔒 Nota de seguridad — OWASP A08 (Software and Data Integrity Failures)
+
+Un upload sin verificar integridad (tipo real de archivo, no solo la extensión
+o el MIME type declarado por el cliente — ambos falsificables) es la forma más
+directa de A08 en una API: el cliente decide qué sube, el servidor decide si
+confía en esa declaración sin verificarla. Verificar el tipo real del archivo
+(`file-type`, no `file.mimetype`) es la mitigación concreta que cierra esa
+brecha de confianza.
+
+> Tratamiento completo de OWASP Top 10 en la semana 08.
+
 ## ✅ Checklist Final
 
 - [ ] `fileFilter` rechaza tipos MIME no permitidos

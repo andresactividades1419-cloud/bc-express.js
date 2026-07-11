@@ -219,6 +219,19 @@ services:
 
 ---
 
+## 🔒 Nota de seguridad — OWASP A05 (Security Misconfiguration)
+
+Credenciales hardcodeadas en el YAML, un `postgres` expuesto al host sin
+necesidad (`ports:` innecesario), o una imagen corriendo como `root` dentro
+del contenedor son ejemplos directos de A05 — no es un bug de código, es una
+configuración por defecto insegura que nadie cambió. `env_file` en vez de
+`environment:` con valores literales, y `USER node` en el Dockerfile (semana
+14, ejercicio de Dockerfile) son las mitigaciones concretas.
+
+> Tratamiento completo de OWASP Top 10 en la semana 08.
+
+---
+
 ## ✅ Checklist de Verificación
 
 - [ ] `docker compose up` levanta todos los servicios sin errores

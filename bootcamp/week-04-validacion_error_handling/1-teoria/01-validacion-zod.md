@@ -128,6 +128,19 @@ export type UpdateProductDto = z.infer<typeof updateProductSchema>;
 
 ---
 
+## 🔒 Nota de seguridad — OWASP A03 (Injection)
+
+Validar la forma y el tipo de cada campo de entrada es la primera línea de
+defensa contra inyección (SQL, NoSQL, comandos). Un `req.body` sin validar que
+llega directo a una query es la puerta de entrada más común a A03. Zod no
+reemplaza las queries parametrizadas que verás en las semanas 05 y 06, pero
+sin esta capa, ni siquiera esas protecciones evitan que un atacante envíe tipos
+o estructuras inesperadas al resto del sistema.
+
+> Tratamiento completo de OWASP Top 10 (sanitización, RBAC, headers) en la semana 08.
+
+---
+
 ## ✅ Checklist de verificación
 
 - [ ] `pnpm add zod@4.3.6` instalado

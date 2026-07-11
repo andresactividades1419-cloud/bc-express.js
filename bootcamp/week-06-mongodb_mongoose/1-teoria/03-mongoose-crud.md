@@ -215,6 +215,19 @@ import mongoose from 'mongoose';               // acceso a mongoose.Error.CastEr
 
 > **Nota**: A diferencia de Prisma que lanza `PrismaClientKnownRequestError` con código `P2002` o `P2025`, en Mongoose **debes verificar `null` manualmente** — no hay excepción automática cuando el documento no existe.
 
+## 🔒 Nota de seguridad — OWASP A03 (Injection)
+
+MongoDB tiene su propia variante de inyección: si pasas `req.body` o
+`req.query` directo a un filtro sin validar, un atacante puede enviar
+`{ "$gt": "" }` en vez de un string y alterar la lógica de la query (NoSQL
+injection). Mongoose no te protege de esto automáticamente — la defensa real
+es validar la forma esperada (semana 04) antes de que el dato llegue aquí, y
+`express-mongo-sanitize` como capa adicional (semana 08).
+
+> Tratamiento completo de OWASP Top 10 en la semana 08.
+
+---
+
 ## ✅ Checklist de Verificación
 
 - [ ] Cada operación CRUD está en su propia función exportada

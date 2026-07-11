@@ -177,6 +177,19 @@ app.use(cookieParser());  // debe estar antes de las rutas
 // req.cookies.refreshToken
 ```
 
+## 🔒 Nota de seguridad — OWASP A07 (Identification and Authentication Failures)
+
+Este es el flujo completo que A07 evalúa: ¿se puede fuerza-bruta el login sin
+límite de intentos?, ¿el mensaje de error revela si el email existe?, ¿el
+token robado sigue siendo válido después de un logout? Cada punto del
+checklist de abajo (mismo mensaje de error, rotación de refresh token, cookies
+HttpOnly) es una mitigación directa de A07, no un detalle de implementación
+opcional.
+
+> Tratamiento completo de OWASP Top 10 en la semana 08.
+
+---
+
 ## ✅ Checklist de Verificación
 
 - [ ] Cookie con `httpOnly: true` y `secure: true` en producción
