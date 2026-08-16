@@ -1,0 +1,25 @@
+{
+  "name": "bc-expressjs-week-02-productora-eventos",
+  "version": "1.0.0",
+  "description": "Semana 02 — Servidor Express HTTP REST API para Productora de Eventos (Express 5 + TypeScript)",
+  "main": "dist/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "pnpm@10.34.5",
+  "dependencies": {
+    "express": "5.0.1"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.0",
+    "@types/node": "22.15.21",
+    "tsx": "4.19.4",
+    "typescript": "5.8.3"
+  }
+}
