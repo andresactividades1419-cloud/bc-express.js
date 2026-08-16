@@ -68,7 +68,7 @@
 | Semana | Rama Git | Tema Principal | Estado | Envíos / Correo |
 | :---: | :---: | :--- | :---: | :--- |
 | `week-01` | `week-01` | Node.js Fundamentals & TypeScript Setup | ✅ Completado | Listo para envío |
-| `week-02` | `week-02` | Express Intro & Servidor HTTP | ⏳ Pendiente | Pendiente |
+| `week-02` | `week-02` | Express Intro & Servidor HTTP | ✅ Completado | Listo para envío |
 | `week-03` | `week-03` | Arquitectura REST API | ⏳ Pendiente | Pendiente |
 | `week-04` | `week-04` | Validación con Zod & Error Handling | ⏳ Pendiente | Pendiente |
 | `week-05` | `week-05` | PostgreSQL + Prisma ORM | ⏳ Pendiente | Pendiente |
@@ -84,6 +84,7 @@
 
 ### `events`
 * CLI Procesador de datos (`soluciones/week-01`): Lectura asíncrona de `data/events.json`, filtrado por categoría `--category`, cálculo de presupuestos/aforos y generación de `output/report.json`.
+* Express HTTP REST API (`soluciones/week-02`): Endpoints CRUD completos sobre el dominio (`GET /api/v1/events`, `GET /api/v1/events/:id`, `POST /api/v1/events`, `PUT /api/v1/events/:id`, `DELETE /api/v1/events/:id`).
 
 
 ### `clients`
