@@ -11,16 +11,10 @@ export interface Event {
   active: boolean; // Estado del evento
   location: string; // Recinto o locación del evento
   date: string; // Fecha programada (ISO 8601)
-  createdAt: string; // Timestamp de creación
+  createdAt: Date;
 }
 
-// DTO para crear — sin campos generados por el sistema (id, createdAt)
-export type CreateEventDto = Omit<Event, 'id' | 'createdAt'>;
-
-// DTO para actualizar — todos los campos son opcionales
-export type UpdateEventDto = Partial<CreateEventDto>;
-
-// Contratos de respuesta estandarizados
+// Tipos de respuesta estandarizados
 export interface SingleResponse<T> {
   data: T;
 }
@@ -32,12 +26,14 @@ export interface PaginatedResponse<T> {
   limit: number;
 }
 
+export interface ValidationErrorResponse {
+  error: string;
+  message: string;
+  issues: Array<{ field: string; message: string }>;
+}
+
 export interface ErrorResponse {
   error: string;
   message: string;
-}
-
-export interface PaginationParams {
-  page: number;
-  limit: number;
+  stack?: string;
 }
