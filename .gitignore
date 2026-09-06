@@ -4,3 +4,5 @@ output/
 soluciones/
 .env
 *.log
+package-lock.json
+

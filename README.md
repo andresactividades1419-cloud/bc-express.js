@@ -1,6 +1,6 @@
-# 🎪 Semana 02 — Servidor Express HTTP REST API (Productora de Eventos)
+# Semana 02 — Servidor Express HTTP REST API (Productora de Eventos)
 
-## 📋 Descripción del Proyecto
+## Descripción del Proyecto
 
 Proyecto entregable de la **Semana 02** para el Bootcamp **bc-expressjs**, adaptado 100% al dominio asignado: **Productora de Eventos**.
 
@@ -8,7 +8,7 @@ En esta semana se transforma de forma incremental la base CLI de la Semana 01 en
 
 ---
 
-## 🏢 Entidad del Dominio: `Event`
+## Entidad del Dominio: `Event`
 
 - `id`: Identificador único del evento (ej: `EVT-001`)
 - `name`: Nombre descriptivo del evento
@@ -21,7 +21,7 @@ En esta semana se transforma de forma incremental la base CLI de la Semana 01 en
 
 ---
 
-## 🛣️ Especificación de Endpoints REST API
+## Especificación de Endpoints REST API
 
 | Método | Ruta | Descripción | Código HTTP |
 | :--- | :--- | :--- | :---: |
@@ -34,7 +34,7 @@ En esta semana se transforma de forma incremental la base CLI de la Semana 01 en
 
 ---
 
-## ⚙️ Middlewares Implementados
+## Middlewares Implementados
 
 1. **`express.json()`**: Parseo de cuerpos de solicitud en formato JSON.
 2. **Logger de Solicitudes HTTP**: Captura timestamp, método HTTP, URL original, código de estado devuelto y tiempo de ejecución en milisegundos (`ms`).
@@ -43,7 +43,7 @@ En esta semana se transforma de forma incremental la base CLI de la Semana 01 en
 
 ---
 
-## 🚀 Instrucciones de Ejecución
+## Instrucciones de Ejecución
 
 ```bash
 # 1. Instalar dependencias con pnpm
@@ -61,7 +61,7 @@ pnpm start
 
 ---
 
-## 🧪 Pruebas de Endpoints con `curl`
+## Pruebas de Endpoints con `curl`
 
 ```bash
 # 1. Listar todos los eventos
