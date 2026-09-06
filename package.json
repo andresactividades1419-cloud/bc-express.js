@@ -1,7 +1,7 @@
 {
-  "name": "bc-expressjs-week-03-productora-eventos",
+  "name": "bc-expressjs-week-04-productora-eventos",
   "version": "1.0.0",
-  "description": "Semana 03: API REST con Arquitectura en 4 Capas para Productora de Eventos",
+  "description": "Semana 04: Validacion con Zod, Errores y Logging para Productora de Eventos",
   "main": "dist/server.js",
   "engines": {
     "node": ">=22.0.0"
@@ -13,10 +13,14 @@
     "start": "node dist/server.js"
   },
   "dependencies": {
-    "express": "5.1.0"
+    "express": "5.1.0",
+    "morgan": "1.10.1",
+    "winston": "3.19.0",
+    "zod": "4.3.6"
   },
   "devDependencies": {
     "@types/express": "5.0.1",
+    "@types/morgan": "1.9.10",
     "@types/node": "22.15.3",
     "tsx": "4.19.4",
     "typescript": "5.8.3"

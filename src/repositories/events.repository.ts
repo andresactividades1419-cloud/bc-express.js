@@ -1,15 +1,13 @@
 // ============================================
-// REPOSITORY — Capa de acceso a datos
+// REPOSITORY — Acceso a datos en memoria
 // ============================================
-// Reglas de esta capa:
-// - Único punto de acceso al store en memoria
-// - Todos los métodos deben ser async Promise<T>
-// - Retorna copias defensivas para evitar mutaciones externas
-// - Si no encuentra un elemento, retorna undefined
+import { Event } from '../types';
+import { CreateEventDto, UpdateEventDto } from '../schemas/event.schema';
 
-import { Event, CreateEventDto, UpdateEventDto } from '../types';
+export type CreateEventRepoDto = CreateEventDto;
+export type UpdateEventRepoDto = UpdateEventDto;
 
-const store: Event[] = [
+let events: Event[] = [
   {
     id: 1,
     name: 'Festival Estéreo Picnic 2026',
@@ -19,7 +17,7 @@ const store: Event[] = [
     active: true,
     location: 'Parque Simón Bolívar, Bogotá',
     date: '2026-03-27T14:00:00.000Z',
-    createdAt: '2026-01-10T10:00:00.000Z',
+    createdAt: new Date('2026-01-10T10:00:00.000Z'),
   },
   {
     id: 2,
@@ -30,7 +28,7 @@ const store: Event[] = [
     active: true,
     location: 'Teatro Mayor Julio Mario Santo Domingo, Bogotá',
     date: '2026-04-15T20:00:00.000Z',
-    createdAt: '2026-01-12T11:30:00.000Z',
+    createdAt: new Date('2026-01-12T11:30:00.000Z'),
   },
   {
     id: 3,
@@ -41,7 +39,7 @@ const store: Event[] = [
     active: true,
     location: 'Hacienda El Cedro, Llanogrande, Antioquia',
     date: '2026-05-02T16:00:00.000Z',
-    createdAt: '2026-01-15T15:00:00.000Z',
+    createdAt: new Date('2026-01-15T15:00:00.000Z'),
   },
   {
     id: 4,
@@ -52,7 +50,7 @@ const store: Event[] = [
     active: true,
     location: 'Centro de Convenciones Ágora, Bogotá',
     date: '2026-06-18T08:30:00.000Z',
-    createdAt: '2026-01-20T09:00:00.000Z',
+    createdAt: new Date('2026-01-20T09:00:00.000Z'),
   },
   {
     id: 5,
@@ -63,7 +61,7 @@ const store: Event[] = [
     active: false,
     location: 'Hotel Intercontinental, Medellín',
     date: '2026-07-10T19:30:00.000Z',
-    createdAt: '2026-01-25T14:20:00.000Z',
+    createdAt: new Date('2026-01-25T14:20:00.000Z'),
   },
   {
     id: 6,
@@ -74,52 +72,48 @@ const store: Event[] = [
     active: true,
     location: 'Expofuturo, Pereira',
     date: '2026-08-22T09:00:00.000Z',
-    createdAt: '2026-02-01T08:00:00.000Z',
+    createdAt: new Date('2026-02-01T08:00:00.000Z'),
   },
 ];
 
 let nextId = 7;
 
 export async function findAll(): Promise<Event[]> {
-  return store.map((item) => ({ ...item }));
+  return events.map((event) => ({ ...event }));
 }
 
 export async function findById(id: number): Promise<Event | undefined> {
-  const item = store.find((event) => event.id === id);
+  const item = events.find((e) => e.id === id);
   return item ? { ...item } : undefined;
 }
 
-export async function create(dto: CreateEventDto): Promise<Event> {
+export async function create(dto: CreateEventRepoDto): Promise<Event> {
   const item: Event = {
     id: nextId++,
     ...dto,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(),
   };
-  store.push(item);
+  events.push(item);
   return { ...item };
 }
 
-export async function update(id: number, dto: UpdateEventDto): Promise<Event | undefined> {
-  const index = store.findIndex((event) => event.id === id);
-  if (index === -1) {
-    return undefined;
-  }
+export async function update(id: number, dto: UpdateEventRepoDto): Promise<Event | undefined> {
+  const index = events.findIndex((e) => e.id === id);
+  if (index === -1) return undefined;
 
-  store[index] = {
-    ...store[index]!,
+  events[index] = {
+    ...events[index]!,
     ...dto,
-    id: store[index]!.id,
-    createdAt: store[index]!.createdAt,
+    id: events[index]!.id,
+    createdAt: events[index]!.createdAt,
   };
-
-  return { ...store[index]! };
+  return { ...events[index]! };
 }
 
 export async function remove(id: number): Promise<boolean> {
-  const index = store.findIndex((event) => event.id === id);
-  if (index === -1) {
-    return false;
-  }
-  store.splice(index, 1);
+  const index = events.findIndex((e) => e.id === id);
+  if (index === -1) return false;
+
+  events.splice(index, 1);
   return true;
 }

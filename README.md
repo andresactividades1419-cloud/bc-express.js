@@ -1,37 +1,50 @@
-# Semana 03 — API REST con Arquitectura en 4 Capas (Productora de Eventos)
+# Semana 04 — Validacion, Manejo de Errores y Logging Profesional (Productora de Eventos)
 
 ## Descripcion del Proyecto
 
-Proyecto entregable de la **Semana 03** para el Bootcamp **bc-expressjs**, adaptado 100% al dominio asignado: **Productora de Eventos**.
+Proyecto entregable de la **Semana 04** para el Bootcamp **bc-expressjs**, adaptado 100% al dominio asignado: **Productora de Eventos**.
 
-En esta semana se refactoriza y evoluciona la aplicacion aplicando una **arquitectura desacoplada en 4 capas**:
-`routes → controllers → services → repositories`, garantizando el principio de responsabilidad unica (SRP), contratos de respuesta consistentes con envoltura `data`, paginacion en consultas de colecciones y tipado estricto con TypeScript.
-
----
-
-## Arquitectura en 4 Capas
-
-1. **Routes (`src/routes/events.routes.ts`):** Mapea exclusivamente los metodos HTTP y rutas hacia las funciones del controlador. No contiene logica de negocio ni acceso a datos.
-2. **Controllers (`src/controllers/events.controller.ts`):** Thin controllers que ejecutan un patron estricto de 3 pasos:
-   - Extraer parametros y cuerpo de la solicitud (`req.params`, `req.query`, `req.body`).
-   - Invocar el metodo correspondiente en la capa de servicio.
-   - Emitir la respuesta HTTP con el codigo de estado correspondiente (`200`, `201`, `204`, `404`) o delegar excepciones a `next(err)`.
-3. **Services (`src/services/events.service.ts`):** Capa de logica de negocio y reglas del dominio. No tiene dependencias de Express (`req`/`res`). Maneja la paginacion y validaciones. Retorna `undefined` cuando un recurso no existe.
-4. **Repositories (`src/repositories/events.repository.ts`):** Unica capa con acceso directo al almacenamiento en memoria. Todos sus metodos son asincronos (`Promise<T>`) y retornan copias defensivas para evitar mutaciones externas del estado.
+En esta semana se profundiza en la robustez y calidad de produccion de la API REST mediante tres pilares fundamentales:
+1. **Validacion declarativa de esquemas con Zod**: verificacion rigurosa de tipos, rangos y campos obligatorios tanto en cuerpos de solicitud (`createEventSchema`, `updateEventSchema`) como en parametros de ruta (`:id`).
+2. **Manejo estructurado de errores**: creacion y uso de la clase operacional `AppError`, middleware de captura de rutas no encontradas (`notFound`) y manejador centralizado de errores (`errorHandler`) con firma de 4 parametros para discriminar `ZodError` (400), `AppError` (status correspondiente) y errores no controlados (500).
+3. **Logging profesional con Winston y Morgan**: reemplazo total de `console.log` por registros estructurados con niveles semanticos (`http`, `info`, `warn`, `error`), formato colorizado en desarrollo y JSON con salida a archivo `logs/error.log` en produccion.
 
 ---
 
-## Entidad del Dominio: `Event`
+## Dominio Asignado y Entidad: `Event`
 
-- `id`: Identificador numerico auto-incremental del evento.
-- `name`: Nombre descriptivo del evento (ej: `Festival Estereo Picnic 2026`).
-- `category`: Categoria (`concierto`, `boda`, `conferencia`, `corporativo`, `festival`, `exposicion`).
-- `price`: Presupuesto asignado / costo total del evento en **Pesos Colombianos (COP)**.
-- `capacity`: Aforo maximo estimado de asistentes.
-- `active`: Estado del evento (`true` = confirmado, `false` = inactivo/cancelado).
-- `location`: Recinto o locacion del evento.
-- `date`: Fecha programada (ISO 8601).
-- `createdAt`: Timestamp de registro del evento (ISO 8601).
+- `id`: Identificador numerico entero positivo del evento.
+- `name`: Nombre descriptivo del evento (obligatorio, no vacio).
+- `category`: Categoria permitida (`concierto`, `boda`, `conferencia`, `corporativo`, `festival`, `exposicion`).
+- `price`: Presupuesto asignado / costo total del evento en **Pesos Colombianos (COP)** (numero positivo obligatorio).
+- `capacity`: Aforo maximo estimado de asistentes (entero no negativo, valor por defecto 100).
+- `active`: Estado del evento (`true` = confirmado, `false` = inactivo/cancelado, valor por defecto `true`).
+- `location`: Recinto o locacion del evento (obligatorio, no vacio).
+- `date`: Fecha programada del evento (ISO 8601).
+- `createdAt`: Fecha de registro generada automaticamente.
+
+---
+
+## Esquemas de Validacion Zod (`src/schemas/event.schema.ts`)
+
+```ts
+export const createEventSchema = z.object({
+  name: z.string({ required_error: 'name es obligatorio' }).min(1, 'name no puede estar vacío').trim(),
+  category: z.enum(
+    ['concierto', 'boda', 'conferencia', 'corporativo', 'festival', 'exposicion'],
+    { errorMap: () => ({ message: 'category no válida. Permitidas: concierto, boda, conferencia, corporativo, festival, exposicion' }) }
+  ),
+  price: z.number({ required_error: 'price es obligatorio' }).positive('El presupuesto asignado (price) en COP debe ser mayor a 0'),
+  capacity: z.number().int('El aforo (capacity) debe ser un número entero').nonnegative('El aforo no puede ser negativo').default(100),
+  active: z.boolean().default(true),
+  location: z.string({ required_error: 'location es obligatoria' }).min(1, 'location no puede estar vacía').trim(),
+  date: z.string({ required_error: 'date es obligatoria' }).min(1, 'date no puede estar vacía'),
+});
+
+export const updateEventSchema = createEventSchema.partial();
+export type CreateEventDto = z.infer<typeof createEventSchema>;
+export type UpdateEventDto = z.infer<typeof updateEventSchema>;
+```
 
 ---
 
@@ -41,59 +54,46 @@ En esta semana se refactoriza y evoluciona la aplicacion aplicando una **arquite
 | :--- | :--- | :--- | :---: | :---: |
 | `GET` | `/health` | Verificacion de salud del servicio | `200 OK` | `500` |
 | `GET` | `/api/v1/events` | Listado paginado (`?page=&limit=`) | `200 OK` | `500` |
-| `GET` | `/api/v1/events/:id` | Detalle de un evento por ID | `200 OK` | `404 Not Found` |
-| `POST` | `/api/v1/events` | Registrar un nuevo evento en la Productora | `201 Created` | `400 / 500` |
-| `PUT` | `/api/v1/events/:id` | Actualizacion parcial o total del evento | `200 OK` | `404 / 400` |
-| `DELETE` | `/api/v1/events/:id` | Eliminar un evento | `204 No Content` | `404 Not Found` |
+| `GET` | `/api/v1/events/:id` | Detalle de un evento por ID validado | `200 OK` | `400 / 404` |
+| `POST` | `/api/v1/events` | Registrar nuevo evento con validacion Zod | `201 Created` | `400 Bad Request` |
+| `PUT` | `/api/v1/events/:id` | Actualizacion parcial o total validada | `200 OK` | `400 / 404` |
+| `DELETE` | `/api/v1/events/:id` | Eliminar evento por ID validado | `204 No Content` | `400 / 404` |
 
 ---
 
 ## Contratos de Respuesta Estandarizados
 
-### Listado Paginado (`GET /api/v1/events?page=1&limit=2`)
+### Respuesta de Error de Validacion (`400 Bad Request`)
 ```json
 {
-  "data": [
+  "error": "Validation Error",
+  "message": "Datos de entrada inválidos",
+  "issues": [
     {
-      "id": 1,
-      "name": "Festival Estereo Picnic 2026",
-      "category": "festival",
-      "price": 185000000,
-      "capacity": 45000,
-      "active": true,
-      "location": "Parque Simon Bolivar, Bogota",
-      "date": "2026-03-27T14:00:00.000Z",
-      "createdAt": "2026-01-10T10:00:00.000Z"
+      "field": "name",
+      "message": "name es obligatorio"
+    },
+    {
+      "field": "price",
+      "message": "El presupuesto asignado (price) en COP debe ser mayor a 0"
     }
-  ],
-  "total": 6,
-  "page": 1,
-  "limit": 2
+  ]
 }
 ```
 
-### Recurso Individual (`GET /api/v1/events/1`)
-```json
-{
-  "data": {
-    "id": 1,
-    "name": "Festival Estereo Picnic 2026",
-    "category": "festival",
-    "price": 185000000,
-    "capacity": 45000,
-    "active": true,
-    "location": "Parque Simon Bolivar, Bogota",
-    "date": "2026-03-27T14:00:00.000Z",
-    "createdAt": "2026-01-10T10:00:00.000Z"
-  }
-}
-```
-
-### Recurso No Encontrado (`GET /api/v1/events/999`)
+### Respuesta de Recurso No Encontrado (`404 Not Found`)
 ```json
 {
   "error": "Not Found",
   "message": "Event 999 not found"
+}
+```
+
+### Respuesta de Ruta Inexistente (`404 Not Found` via middleware `notFound`)
+```json
+{
+  "error": "Not Found",
+  "message": "Ruta GET /ruta-inexistente no encontrada"
 }
 ```
 
@@ -112,12 +112,21 @@ En esta semana se refactoriza y evoluciona la aplicacion aplicando una **arquite
     ├── app.ts
     ├── server.ts
     ├── types.ts
+    ├── config/
+    │   └── logger.ts
     ├── controllers/
     │   └── events.controller.ts
+    ├── errors/
+    │   └── AppError.ts
+    ├── middlewares/
+    │   ├── errorHandler.ts
+    │   └── notFound.ts
     ├── repositories/
     │   └── events.repository.ts
     ├── routes/
     │   └── events.routes.ts
+    ├── schemas/
+    │   └── event.schema.ts
     └── services/
         └── events.service.ts
 ```
@@ -130,13 +139,13 @@ En esta semana se refactoriza y evoluciona la aplicacion aplicando una **arquite
 # 1. Instalar dependencias con pnpm
 pnpm install
 
-# 2. Compilar TypeScript y verificar tipos estrictos
+# 2. Compilar TypeScript en modo estricto
 pnpm build
 
-# 3. Arrancar servidor en modo desarrollo
+# 3. Arrancar en modo desarrollo con recarga automatica y morgan
 pnpm dev
 
-# 4. Arrancar en produccion (requiere build previo)
+# 4. Arrancar en modo produccion
 pnpm start
 ```
 
@@ -148,36 +157,45 @@ pnpm start
 # 1. Health check
 curl http://localhost:3000/health
 
-# 2. Listar eventos con paginacion
+# 2. Listado paginado con logs http
 curl "http://localhost:3000/api/v1/events?page=1&limit=3"
 
-# 3. Obtener evento por ID
-curl http://localhost:3000/api/v1/events/1
-
-# 4. Caso de error 404
-curl http://localhost:3000/api/v1/events/999
-
-# 5. Crear un nuevo evento (Presupuesto en COP)
-curl -X POST http://localhost:3000/api/v1/events \
+# 3. Validacion Zod fallida en POST (400 Bad Request con array issues)
+curl -s -i -X POST http://localhost:3000/api/v1/events \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Gran Concierto de Jazz al Parque",
-    "category": "concierto",
-    "price": 42000000,
-    "capacity": 12000,
+    "capacity": -10
+  }'
+
+# 4. Validacion fallida en parametro :id (400 Bad Request)
+curl -s -i http://localhost:3000/api/v1/events/abc
+
+# 5. Recurso inexistente manejado por AppError (404 Not Found)
+curl -s -i http://localhost:3000/api/v1/events/999
+
+# 6. Ruta inexistente capturada por middleware notFound (404 Not Found)
+curl -s -i http://localhost:3000/api/v1/rutas-que-no-existen
+
+# 7. Creacion exitosa con validacion Zod (201 Created)
+curl -s -i -X POST http://localhost:3000/api/v1/events \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Festival Internacional de Cine de Cartagena",
+    "category": "festival",
+    "price": 140000000,
+    "capacity": 8000,
     "active": true,
-    "location": "Parque El Country, Bogota",
-    "date": "2026-09-19T17:00:00.000Z"
+    "location": "Centro de Convenciones Cartagena de Indias",
+    "date": "2026-10-15T18:00:00.000Z"
   }'
 
-# 6. Actualizar evento existente
-curl -X PUT http://localhost:3000/api/v1/events/1 \
+# 8. Actualizacion exitosa con updateEventSchema.partial() (200 OK)
+curl -s -i -X PUT http://localhost:3000/api/v1/events/1 \
   -H "Content-Type: application/json" \
   -d '{
-    "price": 195000000,
-    "capacity": 50000
+    "price": 190000000
   }'
 
-# 7. Eliminar evento (esperado: 204 No Content)
-curl -i -X DELETE http://localhost:3000/api/v1/events/1
+# 9. Eliminacion exitosa (204 No Content)
+curl -s -i -X DELETE http://localhost:3000/api/v1/events/1
 ```
