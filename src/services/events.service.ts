@@ -1,34 +1,40 @@
-import * as repo from '../repositories/events.repository';
+import * as eventsRepo from '../repositories/events.repository';
+import * as clientsRepo from '../repositories/clients.repository';
 import { AppError } from '../errors/AppError';
-import { CreateEventDto, UpdateEventDto } from '../schemas/event.schema';
+import type { CreateEventDto, UpdateEventDto } from '../schemas/event.schema';
 
-export async function listEvents(page: number, limit: number) {
+export async function getAll(page: number, limit: number, search?: string) {
   const safePage = Math.max(1, page);
   const safeLimit = Math.min(Math.max(1, limit), 100);
 
-  return repo.findAll(safePage, safeLimit);
+  return eventsRepo.findAll(safePage, safeLimit, search);
 }
 
-export async function getEventById(id: number) {
-  const event = await repo.findById(id);
-  if (!event) {
-    throw new AppError(404, `Evento con ID ${id} no encontrado`);
+export async function getById(id: string) {
+  return eventsRepo.findById(id);
+}
+
+export async function create(dto: CreateEventDto) {
+  // Verificar que el cliente referenciado exista en la base de datos
+  const clientExists = await clientsRepo.findById(dto.client);
+  if (!clientExists) {
+    throw new AppError(400, 'El cliente referenciado en el evento no existe en la base de datos');
   }
-  return event;
+
+  return eventsRepo.create(dto);
 }
 
-export async function createEvent(data: CreateEventDto) {
-  return repo.create(data);
+export async function update(id: string, dto: UpdateEventDto) {
+  if (dto.client) {
+    const clientExists = await clientsRepo.findById(dto.client);
+    if (!clientExists) {
+      throw new AppError(400, 'El cliente referenciado en la actualización no existe en la base de datos');
+    }
+  }
+
+  return eventsRepo.update(id, dto);
 }
 
-export async function updateEvent(id: number, data: UpdateEventDto) {
-  // Asegurar que exista antes de actualizar
-  await getEventById(id);
-  return repo.update(id, data);
-}
-
-export async function deleteEvent(id: number): Promise<void> {
-  // Asegurar que exista antes de eliminar
-  await getEventById(id);
-  await repo.remove(id);
+export async function remove(id: string): Promise<void> {
+  await eventsRepo.remove(id);
 }

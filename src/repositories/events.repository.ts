@@ -1,127 +1,112 @@
-import { Prisma } from '@prisma/client';
-import { prisma } from '../lib/prisma';
+import { MongoServerError } from 'mongodb';
+import mongoose from 'mongoose';
+import { Event } from '../models/event.model';
 import { AppError } from '../errors/AppError';
-import { CreateEventDto, UpdateEventDto } from '../schemas/event.schema';
+import type { CreateEventDto, UpdateEventDto } from '../schemas/event.schema';
 
-export async function findAll(page: number, limit: number) {
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export async function findAll(
+  page: number,
+  limit: number,
+  search?: string
+): Promise<PaginatedResult<unknown>> {
   const skip = (page - 1) * limit;
+  const filter = search ? { name: { $regex: search, $options: 'i' } } : {};
 
   const [data, total] = await Promise.all([
-    prisma.event.findMany({
-      skip,
-      take: limit,
-      include: {
-        client: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    }),
-    prisma.event.count(),
+    Event.find(filter)
+      .populate('client')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Event.countDocuments(filter),
   ]);
 
   return {
     data,
     total,
     page,
-    limit,
+    totalPages: Math.ceil(total / limit) || 1,
   };
 }
 
-export async function findById(id: number) {
-  return prisma.event.findUnique({
-    where: { id },
-    include: {
-      client: true,
-    },
-  });
-}
-
-export async function findByCode(code: string) {
-  return prisma.event.findUnique({
-    where: { code },
-    include: {
-      client: true,
-    },
-  });
-}
-
-export async function create(data: CreateEventDto) {
+export async function findById(id: string): Promise<unknown> {
   try {
-    return await prisma.event.create({
-      data: {
-        name: data.name,
-        code: data.code,
-        category: data.category,
-        price: data.price,
-        capacity: data.capacity,
-        active: data.active,
-        location: data.location,
-        date: new Date(data.date),
-        clientId: data.clientId,
-      },
-      include: {
-        client: true,
-      },
-    });
+    const event = await Event.findById(id).populate('client').lean();
+    if (!event) {
+      throw new AppError(404, `Evento con ID ${id} no encontrado`);
+    }
+    return event;
   } catch (err: unknown) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2002') {
-        throw new AppError(409, 'Ya existe un evento con ese código único o registro duplicado');
-      }
-      if (err.code === 'P2003') {
-        throw new AppError(400, 'El cliente referenciado no existe en la base de datos');
-      }
+    if (err instanceof mongoose.Error.CastError) {
+      throw new AppError(400, `ID de evento con formato inválido: ${id}`);
     }
     throw err;
   }
 }
 
-export async function update(id: number, data: UpdateEventDto) {
+export async function create(dto: CreateEventDto): Promise<unknown> {
   try {
-    return await prisma.event.update({
-      where: { id },
-      data: {
-        ...(data.name !== undefined && { name: data.name }),
-        ...(data.code !== undefined && { code: data.code }),
-        ...(data.category !== undefined && { category: data.category }),
-        ...(data.price !== undefined && { price: data.price }),
-        ...(data.capacity !== undefined && { capacity: data.capacity }),
-        ...(data.active !== undefined && { active: data.active }),
-        ...(data.location !== undefined && { location: data.location }),
-        ...(data.date !== undefined && { date: new Date(data.date) }),
-        ...(data.clientId !== undefined && { clientId: data.clientId }),
-      },
-      include: {
-        client: true,
-      },
-    });
+    const event = await Event.create(dto);
+    await event.populate('client');
+    return event.toObject();
   } catch (err: unknown) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2025') {
-        throw new AppError(404, `Evento con ID ${id} no encontrado`);
-      }
-      if (err.code === 'P2002') {
-        throw new AppError(409, 'Ya existe un evento con ese código único');
-      }
-      if (err.code === 'P2003') {
-        throw new AppError(400, 'El cliente referenciado no existe en la base de datos');
-      }
+    if (err instanceof MongoServerError && err.code === 11000) {
+      throw new AppError(409, 'Ya existe un evento registrado con ese código único');
+    }
+    if (err instanceof mongoose.Error.CastError) {
+      throw new AppError(400, 'El ID de la referencia al cliente no tiene un formato válido');
+    }
+    if (err instanceof mongoose.Error.ValidationError) {
+      throw new AppError(400, err.message);
     }
     throw err;
   }
 }
 
-export async function remove(id: number): Promise<void> {
+export async function update(id: string, dto: UpdateEventDto): Promise<unknown> {
   try {
-    await prisma.event.delete({
-      where: { id },
-    });
+    const event = await Event.findByIdAndUpdate(id, dto, {
+      new: true,
+      runValidators: true,
+    })
+      .populate('client')
+      .lean();
+
+    if (!event) {
+      throw new AppError(404, `Evento con ID ${id} no encontrado`);
+    }
+    return event;
   } catch (err: unknown) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2025') {
-        throw new AppError(404, `Evento con ID ${id} no encontrado`);
-      }
+    if (err instanceof mongoose.Error.CastError) {
+      throw new AppError(400, `ID con formato inválido: ${id}`);
+    }
+    if (err instanceof MongoServerError && err.code === 11000) {
+      throw new AppError(409, 'Ya existe un evento registrado con ese código único');
+    }
+    if (err instanceof mongoose.Error.ValidationError) {
+      throw new AppError(400, err.message);
+    }
+    throw err;
+  }
+}
+
+export async function remove(id: string): Promise<void> {
+  try {
+    const event = await Event.findByIdAndDelete(id);
+    if (!event) {
+      throw new AppError(404, `Evento con ID ${id} no encontrado`);
+    }
+  } catch (err: unknown) {
+    if (err instanceof mongoose.Error.CastError) {
+      throw new AppError(400, `ID con formato inválido: ${id}`);
     }
     throw err;
   }
