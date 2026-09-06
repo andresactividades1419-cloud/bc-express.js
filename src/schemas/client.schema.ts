@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+export const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+export const objectIdSchema = z
+  .string({ error: 'El ID debe ser una cadena de texto' })
+  .regex(objectIdRegex, { error: 'El ID proporcionado no es un ObjectId de MongoDB válido' });
+
 export const createClientSchema = z.object({
   name: z
     .string({ error: 'name debe ser un texto' })

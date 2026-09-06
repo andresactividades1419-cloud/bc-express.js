@@ -6,3 +6,4 @@ logs/
 soluciones/
 package-lock.json
 output/
+.DS_Store

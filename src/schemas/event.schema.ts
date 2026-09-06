@@ -1,13 +1,8 @@
 import { z } from 'zod';
+import { objectIdRegex, objectIdSchema } from './client.schema';
+import { EVENT_CATEGORIES } from '../models/event.model';
 
-export const EVENT_CATEGORIES = [
-  'concierto',
-  'boda',
-  'conferencia',
-  'corporativo',
-  'festival',
-  'exposicion',
-] as const;
+export { objectIdSchema };
 
 export const createEventSchema = z.object({
   name: z
@@ -45,18 +40,12 @@ export const createEventSchema = z.object({
     .refine((val) => !isNaN(Date.parse(val)), {
       error: 'date debe ser una fecha válida (formato ISO 8601 ej. 2026-03-27T14:00:00Z)',
     }),
-  clientId: z
-    .number({ error: 'clientId debe ser un número entero positivo' })
-    .int({ error: 'clientId debe ser un número entero' })
-    .positive({ error: 'clientId debe ser un número positivo' }),
+  client: z
+    .string({ error: 'client debe ser una cadena con el ObjectId del cliente' })
+    .regex(objectIdRegex, { error: 'El campo client debe ser un ObjectId de MongoDB válido (24 caracteres hexadecimales)' }),
 });
 
 export const updateEventSchema = createEventSchema.partial();
-
-export const idSchema = z.coerce
-  .number({ error: 'El ID debe ser un número' })
-  .int({ error: 'El ID debe ser un entero' })
-  .positive({ error: 'El ID debe ser un entero positivo' });
 
 export type CreateEventDto = z.infer<typeof createEventSchema>;
 export type UpdateEventDto = z.infer<typeof updateEventSchema>;

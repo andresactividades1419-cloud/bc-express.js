@@ -1,99 +1,91 @@
-# Semana 05 — Persistencia con PostgreSQL y Prisma ORM
+# Semana 06 — Base de Datos NoSQL con MongoDB y Mongoose ODM
 
 ## 1. Descripcion del Dominio
 
-Este proyecto corresponde a la **Semana 05** del bootcamp **bc-expressjs**, adaptado al dominio **Productora de Eventos** (`events`, `clients`, `vendors`, `staff`).
+Este proyecto corresponde a la **Semana 06** del bootcamp **bc-expressjs**, adaptado al dominio **Productora de Eventos** (`events`, `clients`, `vendors`, `staff`).
 
-En esta etapa se migra la capa de persistencia desde memoria hacia una base de datos relacional **PostgreSQL** mediante el ORM **Prisma**. Se definen dos entidades principales vinculadas por una relacion 1:N:
-- **Client (`clients`):** Clientes corporativos e institucionales que contratan servicios para eventos.
-- **Event (`events`):** Eventos gestionados por la productora (festivales, conciertos, conferencias, eventos corporativos) con presupuestos expresados estrictamente en **Pesos Colombianos (COP)** y clave foranea hacia `Client`.
+En esta semana se realiza la transición a una base de datos documental **NoSQL** utilizando **MongoDB 7** y el ODM **Mongoose**. Se definen dos colecciones relacionadas mediante referencias por `ObjectId`:
+- **Client (`clients`):** Entidad secundaria que representa clientes corporativos e institucionales que contratan servicios.
+- **Event (`events`):** Entidad principal que representa eventos culturales, conciertos, festivales y galas con presupuestos expresados estrictamente en **Pesos Colombianos (COP)** y referencia documental a `Client` resuelta mediante `.populate('client')`.
 
 ---
 
-## 2. Modelo de Datos y Relaciones
+## 2. Modelo de Datos y Esquemas Mongoose
 
-### Diagrama Entidad-Relacion
+### Diagrama de Documentos y Referencia
 
 ```text
-+-----------------------------------+          +-----------------------------------+
-|              clients              |          |              events               |
-+-----------------------------------+          +-----------------------------------+
-| id: Int (PK)                      | 1      N | id: Int (PK)                      |
-| name: String                      |<---------| name: String                      |
-| email: String (UNIQUE)            |          | code: String (UNIQUE)             |
-| phone: String                     |          | category: String                  |
-| company: String (Nullable)        |          | price: Float (COP)                |
-| createdAt: DateTime               |          | capacity: Int                     |
-| updatedAt: DateTime               |          | active: Boolean                   |
-+-----------------------------------+          | location: String                  |
-                                               | date: DateTime                    |
-                                               | clientId: Int (FK -> clients.id)  |
-                                               | createdAt: DateTime               |
-                                               | updatedAt: DateTime               |
-                                               +-----------------------------------+
++------------------------------------+          +------------------------------------+
+|         Coleccion: clients         |          |         Coleccion: events          |
++------------------------------------+          +------------------------------------+
+| _id: ObjectId                      | 1      N | _id: ObjectId                      |
+| name: String (Max 120)             |<---------| name: String (Max 150)             |
+| email: String (UNIQUE)             |          | code: String (UNIQUE)              |
+| phone: String (Max 25)             |          | category: String (Enum)            |
+| company: String (Optional)         |          | price: Number (COP > 0)            |
+| createdAt: Date                    |          | capacity: Number (Default: 100)    |
+| updatedAt: Date                    |          | active: Boolean (Default: true)    |
++------------------------------------+          | location: String                   |
+                                                | date: Date                         |
+                                                | client: ObjectId (ref: 'Client')   |
+                                                | createdAt: Date                    |
+                                                | updatedAt: Date                    |
+                                                +------------------------------------+
 ```
 
-### Caracteristicas del Modelo en `prisma/schema.prisma`
-- **Restricciones Unicas (`@unique`):**
-  - `Client.email`: Evita registrar clientes duplicados. Demuestra el manejo del codigo de error `P2002`.
-  - `Event.code`: Codigo alfanumerico de identificacion unico del evento (ej. `EVT-2026-001`). Demuestra el manejo del codigo de error `P2002`.
-- **Integridad Referencial:**
-  - Relacion `Client` 1:N `Event` mediante `clientId` con eliminacion en cascada (`onDelete: Cascade`).
-- **Valores por Defecto y Auditoria:**
-  - `capacity` con valor por defecto de 100 asistentes.
-  - `active` con valor por defecto `true`.
-  - `createdAt` con marca temporal automatica y `updatedAt` autogestionado por Prisma.
+### Caracteristicas Tecnicas del Esquema
+- **Restricciones Unicas (`unique: true`):**
+  - `Client.email`: Correo corporativo unico. Falla con error de clave duplicada `11000`.
+  - `Event.code`: Codigo alfanumerico de identificacion unica (ej. `EVT-2026-001`). Falla con error `11000`.
+- **Relaciones Documentales por Referencia (`ref`):**
+  - `Event.client`: Almacena el `ObjectId` del cliente correspondiente y se resuelve mediante `.populate('client')` en las consultas de listado y detalle.
+- **Validacion Zod:**
+  - Validador estricto de identificadores hexadecimales de 24 caracteres (`/^[0-9a-fA-F]{24}$/`).
 
 ---
 
-## 3. Instrucciones de Ejecucion
+## 3. Instrucciones de Instalacion y Puesta en Marcha
 
 ### Prerrequisitos
 - Node.js >= 22.0.0
 - pnpm >= 10.34.5
-- Docker Desktop o una instancia activa de PostgreSQL 16
+- Docker Desktop o una instancia activa de MongoDB 7
 
-### Pasos de Instalacion y Puesta en Marcha
+### Pasos de Ejecucion
 
 1. **Instalar dependencias:**
    ```bash
    pnpm install
    ```
 
-2. **Levantar PostgreSQL con Docker Compose:**
+2. **Levantar MongoDB con Docker Compose:**
    ```bash
    docker compose up -d
    ```
 
-3. **Configurar variables de entorno:**
-   Asegurar que el archivo `.env` contenga la cadena de conexion:
+3. **Configurar variables de entorno (`.env`):**
    ```env
-   DATABASE_URL="postgresql://bootcamp:bootcamp123@localhost:5432/bootcamp_dev"
+   MONGODB_URI=mongodb://bootcamp:bootcamp123@localhost:27017/bootcamp_dev?authSource=admin
    PORT=3000
    NODE_ENV=development
    ```
 
-4. **Ejecutar migraciones de base de datos:**
+4. **Ejecutar seed de datos iniciales:**
    ```bash
-   pnpm dlx prisma migrate dev --name init
+   pnpm seed
    ```
 
-5. **Ejecutar seed de datos iniciales:**
-   ```bash
-   pnpm dlx prisma db seed
-   ```
-
-6. **Compilar el proyecto con TypeScript:**
+5. **Compilar el proyecto con TypeScript:**
    ```bash
    pnpm build
    ```
 
-7. **Iniciar en modo desarrollo:**
+6. **Iniciar servidor en modo desarrollo:**
    ```bash
    pnpm dev
    ```
 
-8. **Iniciar en modo produccion:**
+7. **Iniciar servidor en modo produccion:**
    ```bash
    pnpm start
    ```
@@ -102,29 +94,39 @@ En esta etapa se migra la capa de persistencia desde memoria hacia una base de d
 
 ## 4. Catalogo de Endpoints de la API
 
-Base URL: `http://localhost:3000/api/v1/events`
+### Entidad Secundaria: Clientes (`/api/v1/clients`)
 
 | Metodo | Ruta | Descripcion | Codigo HTTP |
 | :--- | :--- | :--- | :---: |
-| `GET` | `/health` | Chequeo de estado del servidor | `200 OK` |
-| `GET` | `/api/v1/events` | Listado paginado de eventos (incluye cliente) | `200 OK` |
-| `GET` | `/api/v1/events/:id` | Detalle de un evento con relacion al cliente | `200 OK` / `404 Not Found` |
-| `POST` | `/api/v1/events` | Creacion de evento validado con Zod | `201 Created` / `400 Bad Request` / `409 Conflict` |
-| `PUT` | `/api/v1/events/:id` | Actualizacion parcial de evento | `200 OK` / `404 Not Found` / `409 Conflict` |
-| `DELETE` | `/api/v1/events/:id` | Eliminacion de un evento | `204 No Content` / `404 Not Found` |
+| `GET` | `/api/v1/clients` | Listar todos los clientes ordenados alfabeticamente | `200 OK` |
+| `GET` | `/api/v1/clients/:id` | Obtener cliente por su ObjectId | `200 OK` / `400 Bad Request` / `404 Not Found` |
+| `POST` | `/api/v1/clients` | Crear un cliente corporativo | `201 Created` / `400 Bad Request` / `409 Conflict` |
+| `PUT` | `/api/v1/clients/:id` | Actualizar datos de un cliente | `200 OK` / `400 Bad Request` / `404 Not Found` / `409 Conflict` |
+| `DELETE` | `/api/v1/clients/:id` | Eliminar un cliente | `204 No Content` / `400 Bad Request` / `404 Not Found` |
+
+### Entidad Principal: Eventos (`/api/v1/events`)
+
+| Metodo | Ruta | Descripcion | Codigo HTTP |
+| :--- | :--- | :--- | :---: |
+| `GET` | `/health` | Chequeo de salud del servidor | `200 OK` |
+| `GET` | `/api/v1/events` | Listado paginado con `.populate('client')` | `200 OK` |
+| `GET` | `/api/v1/events/:id` | Detalle del evento con cliente populado | `200 OK` / `400 Bad Request` / `404 Not Found` |
+| `POST` | `/api/v1/events` | Crear evento (valida que client sea ObjectId valido) | `201 Created` / `400 Bad Request` / `409 Conflict` |
+| `PUT` | `/api/v1/events/:id` | Actualizar evento parcialmente | `200 OK` / `400 Bad Request` / `404 Not Found` / `409 Conflict` |
+| `DELETE` | `/api/v1/events/:id` | Eliminar evento por su ObjectId | `204 No Content` / `400 Bad Request` / `404 Not Found` |
 
 ---
 
-## 5. Ejemplos de Peticiones y Respuestas
+## 5. Ejemplos de Solicitudes y Respuestas
 
-### A. Listado Paginado (`GET /api/v1/events?page=1&limit=2`)
+### A. Listado Paginado con Populate (`GET /api/v1/events?page=1&limit=2`)
 
 **Respuesta HTTP 200 OK:**
 ```json
 {
   "data": [
     {
-      "id": 1,
+      "_id": "66da00000000000000000001",
       "name": "Festival Estéreo Picnic 2026",
       "code": "EVT-2026-001",
       "category": "festival",
@@ -133,36 +135,37 @@ Base URL: `http://localhost:3000/api/v1/events`
       "active": true,
       "location": "Parque Simón Bolívar, Bogotá",
       "date": "2026-03-27T14:00:00.000Z",
-      "clientId": 1,
       "client": {
-        "id": 1,
+        "_id": "66da00000000000000000010",
         "name": "Páramo Presenta SAS",
         "email": "contacto@paramopresenta.com.co",
         "phone": "+57 310 456 7890",
         "company": "Páramo Producciones"
-      }
+      },
+      "createdAt": "2026-01-10T10:00:00.000Z",
+      "updatedAt": "2026-01-10T10:00:00.000Z"
     }
   ],
   "total": 6,
   "page": 1,
-  "limit": 2
+  "totalPages": 3
 }
 ```
 
-### B. Creacion de Evento (`POST /api/v1/events`)
+### B. Creacion Exitosa de Evento (`POST /api/v1/events`)
 
 **Cuerpo de la Peticion:**
 ```json
 {
-  "name": "Festival Internacional de Salsa Cali 2026",
+  "name": "Concierto Filarmonica de Medellin",
   "code": "EVT-2026-007",
-  "category": "festival",
-  "price": 140000000,
-  "capacity": 20000,
+  "category": "concierto",
+  "price": 85000000,
+  "capacity": 1800,
   "active": true,
-  "location": "Estadio Pascual Guerrero, Cali",
-  "date": "2026-09-18T18:00:00.000Z",
-  "clientId": 1
+  "location": "Teatro Metropolitano, Medellin",
+  "date": "2026-09-25T19:30:00.000Z",
+  "client": "66da00000000000000000010"
 }
 ```
 
@@ -170,18 +173,17 @@ Base URL: `http://localhost:3000/api/v1/events`
 ```json
 {
   "data": {
-    "id": 7,
-    "name": "Festival Internacional de Salsa Cali 2026",
+    "_id": "66da00000000000000000007",
+    "name": "Concierto Filarmonica de Medellin",
     "code": "EVT-2026-007",
-    "category": "festival",
-    "price": 140000000,
-    "capacity": 20000,
+    "category": "concierto",
+    "price": 85000000,
+    "capacity": 1800,
     "active": true,
-    "location": "Estadio Pascual Guerrero, Cali",
-    "date": "2026-09-18T18:00:00.000Z",
-    "clientId": 1,
+    "location": "Teatro Metropolitano, Medellin",
+    "date": "2026-09-25T19:30:00.000Z",
     "client": {
-      "id": 1,
+      "_id": "66da00000000000000000010",
       "name": "Páramo Presenta SAS",
       "email": "contacto@paramopresenta.com.co"
     }
@@ -189,36 +191,41 @@ Base URL: `http://localhost:3000/api/v1/events`
 }
 ```
 
-### C. Conflicto por Registro Unico Duplicado (`P2002` -> `409 Conflict`)
+### C. Conflicto por Clave Duplicada (Codigo 11000 -> HTTP 409)
 
-Si se intenta crear un evento con un codigo ya existente (`EVT-2026-001`):
+Si se intenta crear un evento con un codigo `code` ya existente (`EVT-2026-001`):
 
 **Respuesta HTTP 409 Conflict:**
 ```json
 {
   "error": "Conflict",
-  "message": "Ya existe un evento con ese código único o registro duplicado"
+  "message": "Ya existe un registro con ese valor único en la base de datos"
 }
 ```
 
-### D. Recurso No Encontrado (`P2025` -> `404 Not Found`)
+### D. Error de Casteo de ObjectId (`CastError` -> HTTP 400)
 
-Si se intenta consultar, actualizar o eliminar un evento con ID inexistente:
+Si se realiza una peticion como `GET /api/v1/events/id-invalido`:
 
-**Respuesta HTTP 404 Not Found:**
+**Respuesta HTTP 400 Bad Request:**
 ```json
 {
-  "error": "Not Found",
-  "message": "Evento con ID 999 no encontrado"
+  "error": "Validation Error",
+  "message": "Datos de entrada inválidos",
+  "issues": [
+    {
+      "field": "",
+      "message": "El ID proporcionado no es un ObjectId de MongoDB válido"
+    }
+  ]
 }
 ```
 
 ---
 
-## 6. Manejo de Errores de Base de Datos con Prisma
+## 6. Manejo de Errores Especificos de MongoDB
 
-La capa de repositorio (`events.repository.ts`) captura las instancias de `Prisma.PrismaClientKnownRequestError` y las traduce a excepciones operacionales tipadas de la clase `AppError`:
-
-1. **Codigo `P2002`:** Violacion de restriccion unica. Se traduce a HTTP `409 Conflict`.
-2. **Codigo `P2025`:** Registro objetivo no encontrado durante operaciones de actualizacion o eliminacion. Se traduce a HTTP `404 Not Found`.
-3. **Codigo `P2003`:** Violacion de clave foranea (ej. asociar un evento a un `clientId` inexistente). Se traduce a HTTP `400 Bad Request`.
+1. **`MongoServerError` 11000 (Duplicate Key):** Traducido a HTTP `409 Conflict`.
+2. **`CastError` (Mongoose):** Traducido a HTTP `400 Bad Request`.
+3. **`ValidationError` (Mongoose):** Traducido a HTTP `400 Bad Request`.
+4. **Recurso `null`:** Traducido a HTTP `404 Not Found` mediante la clase `AppError`.
