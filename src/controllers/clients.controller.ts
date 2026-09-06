@@ -1,19 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
-import * as service from '../services/events.service';
+import * as service from '../services/clients.service';
 import {
-  createEventSchema,
-  updateEventSchema,
+  createClientSchema,
+  updateClientSchema,
   objectIdSchema,
-} from '../schemas/event.schema';
+} from '../schemas/client.schema';
 
-export async function getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getAll(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const page = req.query['page'] ? Number(req.query['page']) : 1;
-    const limit = req.query['limit'] ? Number(req.query['limit']) : 10;
-    const search = req.query['search'] as string | undefined;
-
-    const result = await service.getAll(page, limit, search);
-    res.json(result);
+    const clients = await service.getAll();
+    res.json({ data: clients });
   } catch (err: unknown) {
     next(err);
   }
@@ -27,8 +23,8 @@ export async function getById(req: Request, res: Response, next: NextFunction): 
       return;
     }
 
-    const event = await service.getById(parseId.data);
-    res.json({ data: event });
+    const client = await service.getById(parseId.data);
+    res.json({ data: client });
   } catch (err: unknown) {
     next(err);
   }
@@ -36,14 +32,14 @@ export async function getById(req: Request, res: Response, next: NextFunction): 
 
 export async function create(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const parsed = createEventSchema.safeParse(req.body);
+    const parsed = createClientSchema.safeParse(req.body);
     if (!parsed.success) {
       next(parsed.error);
       return;
     }
 
-    const event = await service.create(parsed.data);
-    res.status(201).json({ data: event });
+    const client = await service.create(parsed.data);
+    res.status(201).json({ data: client });
   } catch (err: unknown) {
     next(err);
   }
@@ -57,7 +53,7 @@ export async function update(req: Request, res: Response, next: NextFunction): P
       return;
     }
 
-    const parsed = updateEventSchema.safeParse(req.body);
+    const parsed = updateClientSchema.safeParse(req.body);
     if (!parsed.success) {
       next(parsed.error);
       return;
