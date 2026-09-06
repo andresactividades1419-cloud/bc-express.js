@@ -1,6 +1,6 @@
-# 🎪 Semana 01 — Procesador de Datos CLI (Productora de Eventos)
+# Semana 01 — Procesador de Datos CLI (Productora de Eventos)
 
-## 📋 Descripción del Proyecto
+## Descripción del Proyecto
 
 Proyecto entregable de la **Semana 01** para el Bootcamp **bc-expressjs**, adaptado 100% al dominio asignado: **Productora de Eventos**.
 
@@ -8,7 +8,7 @@ Esta herramienta de línea de comandos (CLI) procesa información sobre eventos 
 
 ---
 
-## 🏢 Entidad del Dominio: `Event`
+## Entidad del Dominio: `Event`
 
 - `id`: Identificador único del evento (ej: `EVT-001`)
 - `name`: Nombre descriptivo del evento
@@ -21,18 +21,18 @@ Esta herramienta de línea de comandos (CLI) procesa información sobre eventos 
 
 ---
 
-## 🛠️ Requisitos Cumplidos (Rúbrica de Evaluación)
+## Requisitos Cumplidos (Rúbrica de Evaluación)
 
-- ✅ **Compilación TypeScript**: `strict: true`, sin tipos `any`, compatible con Node.js 22+.
-- ✅ **ES Modules**: `import`/`export` nativos de ESM.
-- ✅ **Lectura y Escritura Asíncrona**: Uso de `fs/promises` (`readFile`, `writeFile`, `mkdir`) y `async/await`.
-- ✅ **Filtrado CLI**: Soporte para argumento `--category <categoría>`.
-- ✅ **Resumen Estadístico**: Total de eventos, activos/inactivos, presupuesto promedio, evento más caro/barato y categorías únicas.
-- ✅ **Manejo de Errores**: Captura con `try/catch` y mensajes amigables sin crashes inesperados.
+- **Compilación TypeScript**: `strict: true`, sin tipos `any`, compatible con Node.js 22+.
+- **ES Modules**: `import`/`export` nativos de ESM.
+- **Lectura y Escritura Asíncrona**: Uso de `fs/promises` (`readFile`, `writeFile`, `mkdir`) y `async/await`.
+- **Filtrado CLI**: Soporte para argumento `--category <categoría>`.
+- **Resumen Estadístico**: Total de eventos, activos/inactivos, presupuesto promedio, evento más caro/barato y categorías únicas.
+- **Manejo de Errores**: Captura con `try/catch` y mensajes amigables sin crashes inesperados.
 
 ---
 
-## 🚀 Instrucciones de Ejecución
+## Instrucciones de Ejecución
 
 ```bash
 # 1. Instalar dependencias con pnpm
@@ -52,10 +52,10 @@ pnpm dev -- --category conferencia
 
 ---
 
-## 📦 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
-soluciones/week-01/
+./
 ├── package.json
 ├── tsconfig.json
 ├── README.md
