@@ -1,119 +1,128 @@
-// ============================================
-// REPOSITORY — Acceso a datos en memoria
-// ============================================
-import { Event } from '../types';
+import { Prisma } from '@prisma/client';
+import { prisma } from '../lib/prisma';
+import { AppError } from '../errors/AppError';
 import { CreateEventDto, UpdateEventDto } from '../schemas/event.schema';
 
-export type CreateEventRepoDto = CreateEventDto;
-export type UpdateEventRepoDto = UpdateEventDto;
+export async function findAll(page: number, limit: number) {
+  const skip = (page - 1) * limit;
 
-let events: Event[] = [
-  {
-    id: 1,
-    name: 'Festival Estéreo Picnic 2026',
-    category: 'festival',
-    price: 185000000,
-    capacity: 45000,
-    active: true,
-    location: 'Parque Simón Bolívar, Bogotá',
-    date: '2026-03-27T14:00:00.000Z',
-    createdAt: new Date('2026-01-10T10:00:00.000Z'),
-  },
-  {
-    id: 2,
-    name: 'Concierto Filarmónica de Bogotá',
-    category: 'concierto',
-    price: 65000000,
-    capacity: 1500,
-    active: true,
-    location: 'Teatro Mayor Julio Mario Santo Domingo, Bogotá',
-    date: '2026-04-15T20:00:00.000Z',
-    createdAt: new Date('2026-01-12T11:30:00.000Z'),
-  },
-  {
-    id: 3,
-    name: 'Boda Campestre Los Rosales',
-    category: 'boda',
-    price: 32000000,
-    capacity: 180,
-    active: true,
-    location: 'Hacienda El Cedro, Llanogrande, Antioquia',
-    date: '2026-05-02T16:00:00.000Z',
-    createdAt: new Date('2026-01-15T15:00:00.000Z'),
-  },
-  {
-    id: 4,
-    name: 'Cumbre Latinoamericana de Inteligencia Artificial',
-    category: 'conferencia',
-    price: 120000000,
-    capacity: 2500,
-    active: true,
-    location: 'Centro de Convenciones Ágora, Bogotá',
-    date: '2026-06-18T08:30:00.000Z',
-    createdAt: new Date('2026-01-20T09:00:00.000Z'),
-  },
-  {
-    id: 5,
-    name: 'Gala Anual Corporativa Grupo Éxito',
-    category: 'corporativo',
-    price: 55000000,
-    capacity: 600,
-    active: false,
-    location: 'Hotel Intercontinental, Medellín',
-    date: '2026-07-10T19:30:00.000Z',
-    createdAt: new Date('2026-01-25T14:20:00.000Z'),
-  },
-  {
-    id: 6,
-    name: 'Expo Agroindustrial del Eje Cafetero',
-    category: 'exposicion',
-    price: 78000000,
-    capacity: 5000,
-    active: true,
-    location: 'Expofuturo, Pereira',
-    date: '2026-08-22T09:00:00.000Z',
-    createdAt: new Date('2026-02-01T08:00:00.000Z'),
-  },
-];
+  const [data, total] = await Promise.all([
+    prisma.event.findMany({
+      skip,
+      take: limit,
+      include: {
+        client: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    }),
+    prisma.event.count(),
+  ]);
 
-let nextId = 7;
-
-export async function findAll(): Promise<Event[]> {
-  return events.map((event) => ({ ...event }));
-}
-
-export async function findById(id: number): Promise<Event | undefined> {
-  const item = events.find((e) => e.id === id);
-  return item ? { ...item } : undefined;
-}
-
-export async function create(dto: CreateEventRepoDto): Promise<Event> {
-  const item: Event = {
-    id: nextId++,
-    ...dto,
-    createdAt: new Date(),
+  return {
+    data,
+    total,
+    page,
+    limit,
   };
-  events.push(item);
-  return { ...item };
 }
 
-export async function update(id: number, dto: UpdateEventRepoDto): Promise<Event | undefined> {
-  const index = events.findIndex((e) => e.id === id);
-  if (index === -1) return undefined;
-
-  events[index] = {
-    ...events[index]!,
-    ...dto,
-    id: events[index]!.id,
-    createdAt: events[index]!.createdAt,
-  };
-  return { ...events[index]! };
+export async function findById(id: number) {
+  return prisma.event.findUnique({
+    where: { id },
+    include: {
+      client: true,
+    },
+  });
 }
 
-export async function remove(id: number): Promise<boolean> {
-  const index = events.findIndex((e) => e.id === id);
-  if (index === -1) return false;
+export async function findByCode(code: string) {
+  return prisma.event.findUnique({
+    where: { code },
+    include: {
+      client: true,
+    },
+  });
+}
 
-  events.splice(index, 1);
-  return true;
+export async function create(data: CreateEventDto) {
+  try {
+    return await prisma.event.create({
+      data: {
+        name: data.name,
+        code: data.code,
+        category: data.category,
+        price: data.price,
+        capacity: data.capacity,
+        active: data.active,
+        location: data.location,
+        date: new Date(data.date),
+        clientId: data.clientId,
+      },
+      include: {
+        client: true,
+      },
+    });
+  } catch (err: unknown) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2002') {
+        throw new AppError(409, 'Ya existe un evento con ese código único o registro duplicado');
+      }
+      if (err.code === 'P2003') {
+        throw new AppError(400, 'El cliente referenciado no existe en la base de datos');
+      }
+    }
+    throw err;
+  }
+}
+
+export async function update(id: number, data: UpdateEventDto) {
+  try {
+    return await prisma.event.update({
+      where: { id },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.code !== undefined && { code: data.code }),
+        ...(data.category !== undefined && { category: data.category }),
+        ...(data.price !== undefined && { price: data.price }),
+        ...(data.capacity !== undefined && { capacity: data.capacity }),
+        ...(data.active !== undefined && { active: data.active }),
+        ...(data.location !== undefined && { location: data.location }),
+        ...(data.date !== undefined && { date: new Date(data.date) }),
+        ...(data.clientId !== undefined && { clientId: data.clientId }),
+      },
+      include: {
+        client: true,
+      },
+    });
+  } catch (err: unknown) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2025') {
+        throw new AppError(404, `Evento con ID ${id} no encontrado`);
+      }
+      if (err.code === 'P2002') {
+        throw new AppError(409, 'Ya existe un evento con ese código único');
+      }
+      if (err.code === 'P2003') {
+        throw new AppError(400, 'El cliente referenciado no existe en la base de datos');
+      }
+    }
+    throw err;
+  }
+}
+
+export async function remove(id: number): Promise<void> {
+  try {
+    await prisma.event.delete({
+      where: { id },
+    });
+  } catch (err: unknown) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2025') {
+        throw new AppError(404, `Evento con ID ${id} no encontrado`);
+      }
+    }
+    throw err;
+  }
 }

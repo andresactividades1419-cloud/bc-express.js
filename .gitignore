@@ -1,8 +1,8 @@
 node_modules/
 dist/
-logs/
-output/
-soluciones/
 .env
+logs/
 *.log
+soluciones/
 package-lock.json
+output/

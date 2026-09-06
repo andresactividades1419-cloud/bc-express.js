@@ -1,7 +1,7 @@
 {
-  "name": "bc-expressjs-week-04-productora-eventos",
+  "name": "bc-expressjs-week-05-productora-eventos",
   "version": "1.0.0",
-  "description": "Semana 04: Validacion con Zod, Errores y Logging para Productora de Eventos",
+  "description": "Semana 05: PostgreSQL y Prisma ORM para Productora de Eventos",
   "main": "dist/server.js",
   "engines": {
     "node": ">=22.0.0"
@@ -10,18 +10,25 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@prisma/client": "6.8.2",
+    "dotenv": "16.4.7",
     "express": "5.1.0",
     "morgan": "1.10.1",
-    "winston": "3.19.0",
+    "winston": "3.17.0",
     "zod": "4.3.6"
   },
   "devDependencies": {
     "@types/express": "5.0.1",
     "@types/morgan": "1.9.10",
     "@types/node": "22.15.3",
+    "prisma": "6.8.2",
     "tsx": "4.19.4",
     "typescript": "5.8.3"
   }
