@@ -1,36 +1,48 @@
-// ============================================
-// CONFIG — Logger Winston + Morgan
-// ============================================
 import { createLogger, format, transports } from 'winston';
 import morgan from 'morgan';
+import { RequestHandler } from 'express';
 
-const isDev = process.env['NODE_ENV'] !== 'production';
-
-const devFormat = format.combine(
-  format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-  format.colorize(),
-  format.printf(({ timestamp, level, message }) => `[${timestamp}] ${level}: ${message}`)
-);
-
-const prodFormat = format.combine(
-  format.timestamp(),
-  format.json()
-);
+const isProduction = process.env['NODE_ENV'] === 'production';
 
 export const logger = createLogger({
-  level: isDev ? 'http' : 'warn',
-  format: isDev ? devFormat : prodFormat,
+  level: isProduction ? 'warn' : 'http',
+  format: format.combine(
+    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    format.errors({ stack: true }),
+    isProduction
+      ? format.json()
+      : format.printf(({ timestamp, level, message, stack }) => {
+          const logMessage = stack || message;
+          return `[${timestamp}] ${level}: ${logMessage}`;
+        })
+  ),
   transports: [
-    new transports.Console(),
-    ...(isDev ? [] : [new transports.File({ filename: 'logs/error.log', level: 'error' })]),
+    new transports.Console({
+      format: isProduction
+        ? format.json()
+        : format.combine(
+            format.colorize({ all: true }),
+            format.printf(({ timestamp, level, message, stack }) => {
+              const logMessage = stack || message;
+              return `[${timestamp}] ${level}: ${logMessage}`;
+            })
+          ),
+    }),
+    ...(isProduction
+      ? [
+          new transports.File({
+            filename: 'logs/error.log',
+            level: 'error',
+          }),
+        ]
+      : []),
   ],
 });
 
-export const morganStream = {
-  write: (message: string): void => {
-    logger.http(message.trim());
+export const morganMiddleware: RequestHandler = morgan(':method :url :status :response-time ms - :res[content-length]', {
+  stream: {
+    write: (message: string) => {
+      logger.http(message.trim());
+    },
   },
-};
-
-const morganFormat = isDev ? 'dev' : 'combined';
-export const morganMiddleware = morgan(morganFormat, { stream: morganStream });
+});

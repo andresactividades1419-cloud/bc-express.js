@@ -1,38 +1,62 @@
-// ============================================
-// SCHEMAS — Validación con Zod (Productora de Eventos)
-// ============================================
 import { z } from 'zod';
+
+export const EVENT_CATEGORIES = [
+  'concierto',
+  'boda',
+  'conferencia',
+  'corporativo',
+  'festival',
+  'exposicion',
+] as const;
 
 export const createEventSchema = z.object({
   name: z
-    .string({ error: 'name es obligatorio' })
-    .min(1, 'name no puede estar vacío')
-    .trim(),
-  category: z.enum(
-    ['concierto', 'boda', 'conferencia', 'corporativo', 'festival', 'exposicion'] as const,
-    {
-      error: 'category no válida. Permitidas: concierto, boda, conferencia, corporativo, festival, exposicion',
-    }
-  ),
+    .string({ error: 'name debe ser un texto' })
+    .trim()
+    .min(1, { error: 'name no puede estar vacío' })
+    .max(150, { error: 'name no puede exceder 150 caracteres' }),
+  code: z
+    .string({ error: 'code debe ser un texto' })
+    .trim()
+    .min(3, { error: 'code debe tener al menos 3 caracteres' })
+    .max(30, { error: 'code no puede exceder 30 caracteres' })
+    .regex(/^[A-Z0-9-]+$/i, { error: 'code solo puede contener letras, números y guiones' }),
+  category: z.enum(EVENT_CATEGORIES, {
+    error: `category no válida. Permitidas: ${EVENT_CATEGORIES.join(', ')}`,
+  }),
   price: z
-    .number({ error: 'price es obligatorio' })
-    .positive('El presupuesto asignado (price) en COP debe ser mayor a 0'),
+    .number({ error: 'price debe ser un número en COP' })
+    .positive({ error: 'El presupuesto asignado (price) en COP debe ser mayor a 0' }),
   capacity: z
-    .number()
-    .int('El aforo (capacity) debe ser un número entero')
-    .nonnegative('El aforo no puede ser negativo')
+    .number({ error: 'capacity debe ser un número entero' })
+    .int({ error: 'capacity debe ser un número entero' })
+    .nonnegative({ error: 'El aforo no puede ser negativo' })
     .default(100),
-  active: z.boolean().default(true),
+  active: z.boolean({ error: 'active debe ser un booleano' }).default(true),
   location: z
-    .string({ error: 'location es obligatoria' })
-    .min(1, 'location no puede estar vacía')
-    .trim(),
+    .string({ error: 'location debe ser un texto' })
+    .trim()
+    .min(1, { error: 'location es obligatoria' })
+    .max(200, { error: 'location no puede exceder 200 caracteres' }),
   date: z
-    .string({ error: 'date es obligatoria' })
-    .min(1, 'date no puede estar vacía'),
+    .string({ error: 'date debe ser una cadena de texto en formato ISO o fecha válida' })
+    .trim()
+    .min(1, { error: 'date es obligatoria' })
+    .refine((val) => !isNaN(Date.parse(val)), {
+      error: 'date debe ser una fecha válida (formato ISO 8601 ej. 2026-03-27T14:00:00Z)',
+    }),
+  clientId: z
+    .number({ error: 'clientId debe ser un número entero positivo' })
+    .int({ error: 'clientId debe ser un número entero' })
+    .positive({ error: 'clientId debe ser un número positivo' }),
 });
 
 export const updateEventSchema = createEventSchema.partial();
+
+export const idSchema = z.coerce
+  .number({ error: 'El ID debe ser un número' })
+  .int({ error: 'El ID debe ser un entero' })
+  .positive({ error: 'El ID debe ser un entero positivo' });
 
 export type CreateEventDto = z.infer<typeof createEventSchema>;
 export type UpdateEventDto = z.infer<typeof updateEventSchema>;

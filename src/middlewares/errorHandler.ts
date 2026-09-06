@@ -1,58 +1,51 @@
-// ============================================
-// MIDDLEWARES — errorHandler (4 parámetros)
-// ============================================
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { AppError } from '../errors/AppError';
 import { logger } from '../config/logger';
-import { ValidationErrorResponse, ErrorResponse } from '../types';
 
 export function errorHandler(
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ): void {
-  const isProduction = process.env['NODE_ENV'] === 'production';
-
-  // 1. ZodError → 400 Bad Request
+  // 1. Errores de validación declarativa de Zod
   if (err instanceof ZodError) {
     const issues = err.issues.map((issue) => ({
-      field: issue.path.join('.') || 'body',
+      field: issue.path.join('.'),
       message: issue.message,
     }));
 
-    const response: ValidationErrorResponse = {
+    logger.warn(`Validación fallida en ${req.method} ${req.originalUrl}: ${JSON.stringify(issues)}`);
+
+    res.status(400).json({
       error: 'Validation Error',
       message: 'Datos de entrada inválidos',
       issues,
-    };
-
-    logger.warn(`Validation Error: ${JSON.stringify(issues)}`);
-    res.status(400).json(response);
+    });
     return;
   }
 
-  // 2. AppError → err.statusCode
+  // 2. Errores operacionales controlados (AppError)
   if (err instanceof AppError) {
     logger.warn(`AppError (${err.statusCode}): ${err.message}`);
-    const response: ErrorResponse = {
-      error: err.statusCode === 404 ? 'Not Found' : 'Application Error',
+
+    res.status(err.statusCode).json({
+      error: err.statusCode === 404 ? 'Not Found' : err.statusCode === 409 ? 'Conflict' : 'Client Error',
       message: err.message,
-    };
-    res.status(err.statusCode).json(response);
+    });
     return;
   }
 
-  // 3. Error genérico no controlado → 500 Internal Server Error
-  const errorInstance = err instanceof Error ? err : new Error(String(err));
-  logger.error(`Unhandled Error: ${errorInstance.message} - ${errorInstance.stack}`);
+  // 3. Errores no controlados (500 Internal Server Error)
+  const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+  const errorStack = err instanceof Error ? err.stack : undefined;
 
-  const response: ErrorResponse = {
+  logger.error(`Unhandled Error: ${errorMessage}`, { stack: errorStack });
+
+  res.status(500).json({
     error: 'Internal Server Error',
-    message: isProduction ? 'Ha ocurrido un error interno en el servidor' : errorInstance.message,
-    ...(isProduction ? {} : { stack: errorInstance.stack }),
-  };
-
-  res.status(500).json(response);
+    message: process.env['NODE_ENV'] === 'production' ? 'Ha ocurrido un error interno en el servidor' : errorMessage,
+    ...(process.env['NODE_ENV'] !== 'production' && errorStack ? { stack: errorStack } : {}),
+  });
 }
