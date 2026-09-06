@@ -1,43 +1,43 @@
-/**
- * Categorías permitidas para la Productora de Eventos
- */
-export type EventCategory =
-  | 'concierto'
-  | 'boda'
-  | 'conferencia'
-  | 'corporativo'
-  | 'festival'
-  | 'exposicion';
+// ============================================
+// TYPES — Dominio: Productora de Eventos
+// ============================================
 
-/**
- * Entidad Principal del Dominio: Event (Evento de la Productora)
- */
 export interface Event {
-  id: string;
+  id: number;
   name: string;
-  category: EventCategory;
-  price: number; // Presupuesto asignado en Pesos Colombianos (COP)
+  category: string; // concierto, boda, conferencia, corporativo, festival, exposicion
+  price: number; // Presupuesto asignado en COP
   capacity: number; // Aforo máximo estimado
-  active: boolean; // Estado del evento (true = confirmado, false = cancelado)
+  active: boolean; // Estado del evento
   location: string; // Recinto o locación del evento
   date: string; // Fecha programada (ISO 8601)
+  createdAt: string; // Timestamp de creación
 }
 
-/**
- * DTO para la creación de un nuevo evento
- */
-export type CreateEventDto = Omit<Event, 'id'>;
+// DTO para crear — sin campos generados por el sistema (id, createdAt)
+export type CreateEventDto = Omit<Event, 'id' | 'createdAt'>;
 
-/**
- * DTO para la actualización parcial o total de un evento existente
- */
+// DTO para actualizar — todos los campos son opcionales
 export type UpdateEventDto = Partial<CreateEventDto>;
 
-/**
- * Filtros de búsqueda para la consulta de eventos
- */
-export interface EventQueryParams {
-  category?: EventCategory;
-  active?: boolean;
-  search?: string;
+// Contratos de respuesta estandarizados
+export interface SingleResponse<T> {
+  data: T;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface ErrorResponse {
+  error: string;
+  message: string;
+}
+
+export interface PaginationParams {
+  page: number;
+  limit: number;
 }
