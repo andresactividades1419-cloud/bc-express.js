@@ -1,49 +1,34 @@
-// ============================================
-// SERVICE — Lógica de negocio con AppError
-// ============================================
-import { Event, PaginatedResponse } from '../types';
 import * as repo from '../repositories/events.repository';
 import { AppError } from '../errors/AppError';
 import { CreateEventDto, UpdateEventDto } from '../schemas/event.schema';
 
-interface FindAllOptions {
-  page: number;
-  limit: number;
+export async function listEvents(page: number, limit: number) {
+  const safePage = Math.max(1, page);
+  const safeLimit = Math.min(Math.max(1, limit), 100);
+
+  return repo.findAll(safePage, safeLimit);
 }
 
-export async function findAll(opts: FindAllOptions): Promise<PaginatedResponse<Event>> {
-  const { page, limit } = opts;
-  const all = await repo.findAll();
-  const start = (page - 1) * limit;
-  const data = all.slice(start, start + limit);
-  return { data, total: all.length, page, limit };
-}
-
-export async function findById(id: number): Promise<Event> {
-  const item = await repo.findById(id);
-  if (!item) {
-    throw new AppError(404, `Event ${id} not found`);
+export async function getEventById(id: number) {
+  const event = await repo.findById(id);
+  if (!event) {
+    throw new AppError(404, `Evento con ID ${id} no encontrado`);
   }
-  return item;
+  return event;
 }
 
-export async function create(dto: CreateEventDto): Promise<Event> {
-  return repo.create(dto);
+export async function createEvent(data: CreateEventDto) {
+  return repo.create(data);
 }
 
-export async function update(id: number, dto: UpdateEventDto): Promise<Event> {
-  const exists = await repo.findById(id);
-  if (!exists) {
-    throw new AppError(404, `Event ${id} not found`);
-  }
-  const updated = await repo.update(id, dto);
-  return updated!;
+export async function updateEvent(id: number, data: UpdateEventDto) {
+  // Asegurar que exista antes de actualizar
+  await getEventById(id);
+  return repo.update(id, data);
 }
 
-export async function remove(id: number): Promise<void> {
-  const exists = await repo.findById(id);
-  if (!exists) {
-    throw new AppError(404, `Event ${id} not found`);
-  }
+export async function deleteEvent(id: number): Promise<void> {
+  // Asegurar que exista antes de eliminar
+  await getEventById(id);
   await repo.remove(id);
 }

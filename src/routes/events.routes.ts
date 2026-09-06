@@ -1,15 +1,12 @@
-// ============================================
-// ROUTES — Enrutador de eventos
-// ============================================
 import { Router } from 'express';
-import * as controller from '../controllers/events.controller';
+import * as ctrl from '../controllers/events.controller';
 
 const router = Router();
 
-router.get('/', controller.getAll);
-router.get('/:id', controller.getById);
-router.post('/', controller.create);
-router.put('/:id', controller.update);
-router.delete('/:id', controller.remove);
+router.get('/', ctrl.getAll);
+router.get('/:id', ctrl.getById);
+router.post('/', ctrl.create);
+router.put('/:id', ctrl.update);
+router.delete('/:id', ctrl.remove);
 
 export default router;

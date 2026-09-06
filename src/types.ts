@@ -1,22 +1,27 @@
-// ============================================
-// TYPES — Dominio: Productora de Eventos
-// ============================================
-
-export interface Event {
+export interface ClientEntity {
   id: number;
   name: string;
-  category: string; // concierto, boda, conferencia, corporativo, festival, exposicion
-  price: number; // Presupuesto asignado en COP
-  capacity: number; // Aforo máximo estimado
-  active: boolean; // Estado del evento
-  location: string; // Recinto o locación del evento
-  date: string; // Fecha programada (ISO 8601)
+  email: string;
+  phone: string;
+  company?: string | null;
   createdAt: Date;
+  updatedAt: Date;
 }
 
-// Tipos de respuesta estandarizados
-export interface SingleResponse<T> {
-  data: T;
+export interface EventEntity {
+  id: number;
+  name: string;
+  code: string;
+  category: string;
+  price: number;
+  capacity: number;
+  active: boolean;
+  location: string;
+  date: Date;
+  clientId: number;
+  client?: ClientEntity;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface PaginatedResponse<T> {
@@ -26,10 +31,19 @@ export interface PaginatedResponse<T> {
   limit: number;
 }
 
+export interface SingleResponse<T> {
+  data: T;
+}
+
+export interface ValidationErrorItem {
+  field: string;
+  message: string;
+}
+
 export interface ValidationErrorResponse {
   error: string;
   message: string;
-  issues: Array<{ field: string; message: string }>;
+  issues: ValidationErrorItem[];
 }
 
 export interface ErrorResponse {
