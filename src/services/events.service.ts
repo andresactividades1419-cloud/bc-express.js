@@ -1,40 +1,42 @@
-import * as eventsRepo from '../repositories/events.repository';
-import * as clientsRepo from '../repositories/clients.repository';
-import { AppError } from '../errors/AppError';
-import type { CreateEventDto, UpdateEventDto } from '../schemas/event.schema';
+import { eventsRepository } from '../repositories/events.repository.js';
+import { CreateEventDto, UpdateEventDto } from '../schemas/event.schema.js';
+import { AppError } from '../errors/AppError.js';
 
-export async function getAll(page: number, limit: number, search?: string) {
-  const safePage = Math.max(1, page);
-  const safeLimit = Math.min(Math.max(1, limit), 100);
-
-  return eventsRepo.findAll(safePage, safeLimit, search);
-}
-
-export async function getById(id: string) {
-  return eventsRepo.findById(id);
-}
-
-export async function create(dto: CreateEventDto) {
-  // Verificar que el cliente referenciado exista en la base de datos
-  const clientExists = await clientsRepo.findById(dto.client);
-  if (!clientExists) {
-    throw new AppError(400, 'El cliente referenciado en el evento no existe en la base de datos');
+export class EventsService {
+  async getAll(filter: Record<string, unknown> = {}) {
+    return eventsRepository.findAll(filter);
   }
 
-  return eventsRepo.create(dto);
-}
-
-export async function update(id: string, dto: UpdateEventDto) {
-  if (dto.client) {
-    const clientExists = await clientsRepo.findById(dto.client);
-    if (!clientExists) {
-      throw new AppError(400, 'El cliente referenciado en la actualización no existe en la base de datos');
+  async getById(id: string) {
+    const event = await eventsRepository.findById(id);
+    if (!event) {
+      throw new AppError('Evento no encontrado', 404);
     }
+    return event;
   }
 
-  return eventsRepo.update(id, dto);
+  async create(input: CreateEventDto, userId: string) {
+    return eventsRepository.create({
+      ...input,
+      createdBy: userId
+    });
+  }
+
+  async update(id: string, input: UpdateEventDto) {
+    const updated = await eventsRepository.updateById(id, input);
+    if (!updated) {
+      throw new AppError('Evento no encontrado', 404);
+    }
+    return updated;
+  }
+
+  async delete(id: string) {
+    const deleted = await eventsRepository.deleteById(id);
+    if (!deleted) {
+      throw new AppError('Evento no encontrado', 404);
+    }
+    return deleted;
+  }
 }
 
-export async function remove(id: string): Promise<void> {
-  await eventsRepo.remove(id);
-}
+export const eventsService = new EventsService();

@@ -1,46 +1,35 @@
-import 'dotenv/config';
-import { app } from './app';
-import { connectDB, disconnectDB } from './lib/mongoose';
-import { logger } from './config/logger';
+import dotenv from 'dotenv';
+dotenv.config();
 
-const PORT = Number(process.env['PORT']) || 3000;
+import { app } from './app.js';
+import { connectDB, disconnectDB } from './lib/mongoose.js';
+import { logger } from './config/logger.js';
+
+const PORT = Number(process.env.PORT) || 3000;
 
 async function startServer(): Promise<void> {
   try {
     await connectDB();
 
     const server = app.listen(PORT, () => {
-      logger.info(`Server running on http://localhost:${PORT}`);
-      logger.info(`Health check: http://localhost:${PORT}/health`);
-      logger.info(`API v1 clients: http://localhost:${PORT}/api/v1/clients`);
-      logger.info(`API v1 events: http://localhost:${PORT}/api/v1/events`);
+      logger.info(`Servidor escuchando en http://localhost:${PORT}`);
     });
 
-    async function gracefulShutdown(signal: string): Promise<void> {
-      logger.info(`Recibida señal ${signal}. Cerrando servidor y desconectando MongoDB...`);
+    const handleShutdown = async (signal: string) => {
+      logger.info(`Senal ${signal} recibida. Cerrando servidor de forma ordenada...`);
       server.close(async () => {
-        try {
-          await disconnectDB();
-          logger.info('Desconexión de MongoDB completada.');
-          process.exit(0);
-        } catch (err: unknown) {
-          logger.error('Error al desconectar de MongoDB durante shutdown:', { error: err });
-          process.exit(1);
-        }
+        await disconnectDB();
+        logger.info('Servidor y conexion a base de datos finalizados.');
+        process.exit(0);
       });
-    }
+    };
 
-    process.on('SIGTERM', () => {
-      void gracefulShutdown('SIGTERM');
-    });
-
-    process.on('SIGINT', () => {
-      void gracefulShutdown('SIGINT');
-    });
-  } catch (err: unknown) {
-    logger.error('Fallo al inicializar el servidor:', { error: err });
+    process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+    process.on('SIGINT', () => handleShutdown('SIGINT'));
+  } catch (error) {
+    logger.error('Error critico al iniciar el servidor:', error);
     process.exit(1);
   }
 }
 
-void startServer();
+startServer();

@@ -1,231 +1,145 @@
-# Semana 06 — Base de Datos NoSQL con MongoDB y Mongoose ODM
+# Productora de Eventos - Semana 07: Autenticacion con JWT, Cookies HttpOnly y Hashing bcrypt
 
-## 1. Descripcion del Dominio
+Sistema de gestion y produccion de eventos con autenticacion robusta basada en JSON Web Tokens (JWT), proteccion de contrasenas mediante hashing con bcrypt, transporte seguro en cookies HttpOnly y rotacion de Refresh Tokens.
 
-Este proyecto corresponde a la **Semana 06** del bootcamp **bc-expressjs**, adaptado al dominio **Productora de Eventos** (`events`, `clients`, `vendors`, `staff`).
-
-En esta semana se realiza la transición a una base de datos documental **NoSQL** utilizando **MongoDB 7** y el ODM **Mongoose**. Se definen dos colecciones relacionadas mediante referencias por `ObjectId`:
-- **Client (`clients`):** Entidad secundaria que representa clientes corporativos e institucionales que contratan servicios.
-- **Event (`events`):** Entidad principal que representa eventos culturales, conciertos, festivales y galas con presupuestos expresados estrictamente en **Pesos Colombianos (COP)** y referencia documental a `Client` resuelta mediante `.populate('client')`.
+Todos los presupuestos y valores monetarios se gestionan exclusivamente en Pesos Colombianos (COP).
 
 ---
 
-## 2. Modelo de Datos y Esquemas Mongoose
+## 1. Arquitectura y Diseno del Sistema
 
-### Diagrama de Documentos y Referencia
+El proyecto implementa una arquitectura modular por capas con separacion clara de responsabilidades:
 
-```text
-+------------------------------------+          +------------------------------------+
-|         Coleccion: clients         |          |         Coleccion: events          |
-+------------------------------------+          +------------------------------------+
-| _id: ObjectId                      | 1      N | _id: ObjectId                      |
-| name: String (Max 120)             |<---------| name: String (Max 150)             |
-| email: String (UNIQUE)             |          | code: String (UNIQUE)              |
-| phone: String (Max 25)             |          | category: String (Enum)            |
-| company: String (Optional)         |          | price: Number (COP > 0)            |
-| createdAt: Date                    |          | capacity: Number (Default: 100)    |
-| updatedAt: Date                    |          | active: Boolean (Default: true)    |
-+------------------------------------+          | location: String                   |
-                                                | date: Date                         |
-                                                | client: ObjectId (ref: 'Client')   |
-                                                | createdAt: Date                    |
-                                                | updatedAt: Date                    |
-                                                +------------------------------------+
-```
-
-### Caracteristicas Tecnicas del Esquema
-- **Restricciones Unicas (`unique: true`):**
-  - `Client.email`: Correo corporativo unico. Falla con error de clave duplicada `11000`.
-  - `Event.code`: Codigo alfanumerico de identificacion unica (ej. `EVT-2026-001`). Falla con error `11000`.
-- **Relaciones Documentales por Referencia (`ref`):**
-  - `Event.client`: Almacena el `ObjectId` del cliente correspondiente y se resuelve mediante `.populate('client')` en las consultas de listado y detalle.
-- **Validacion Zod:**
-  - Validador estricto de identificadores hexadecimales de 24 caracteres (`/^[0-9a-fA-F]{24}$/`).
+- **Models (`src/models/`):** Esquemas de Mongoose con tipos de TypeScript (`UserModel`, `EventModel`). El modelo de usuario omite por defecto campos sensibles (`password`, `refreshToken`) mediante `select: false`.
+- **Repositories (`src/repositories/`):** Capa de acceso a datos directa sobre MongoDB, encapsulando consultas y manejo de errores de bajo nivel.
+- **Services (`src/services/`):** Capa de logica de negocio, generacion de tokens, verificacion de hashes y orquestacion.
+- **Controllers (`src/controllers/`):** Controladores HTTP encargados de interpretar solicitudes, gestionar cookies HttpOnly y enviar respuestas estructuradas.
+- **Middlewares (`src/middlewares/`):** Autenticacion (`authenticate`), autorizacion por roles (`authorize`), validacion de esquemas Zod (`validateBody`, `validateParams`), y manejo centralizado de errores (`errorHandler`).
+- **Schemas (`src/schemas/`):** Validacion rigurosa de entradas en tiempo de ejecucion con Zod.
+- **Utils (`src/utils/`):** Firmado y verificacion tipada de tokens JWT de acceso y refresco.
+- **Config (`src/config/`):** Registro de eventos y peticiones mediante Winston y Morgan.
 
 ---
 
-## 3. Instrucciones de Instalacion y Puesta en Marcha
+## 2. Estrategia de Seguridad y Autenticacion
 
-### Prerrequisitos
-- Node.js >= 22.0.0
-- pnpm >= 10.34.5
-- Docker Desktop o una instancia activa de MongoDB 7
+### Hashing de Contrasenas
+- Se emplea la libreria `bcrypt` con un costo de 10 rondas de sal (salt rounds).
+- Las contrasenas nunca se almacenan en texto plano.
+- En los endpoints de inicio de sesion se mitiga la enumeracion de usuarios retornando mensajes genericos (`Credenciales invalidas`) tanto para correos no registrados como para contrasenas erroneas.
 
-### Pasos de Ejecucion
+### Ciclo de Vida de Tokens JWT
+1. **Access Token:**
+   - Vigencia: 15 minutos.
+   - Proposito: Autorizar peticiones a rutas protegidas.
+   - Transporte: Cookie HttpOnly con ruta raiz (`/`) o encabezado `Authorization: Bearer <token>`.
+2. **Refresh Token:**
+   - Vigencia: 7 dias.
+   - Proposito: Solicitar un nuevo par de tokens sin requerir que el usuario ingrese nuevamente sus credenciales.
+   - Transporte: Cookie HttpOnly restringida exclusivamente a la ruta `/api/v1/auth`.
+   - Rotacion y Revocacion: Cada solicitud a `/refresh` genera un nuevo par de tokens e invalida el anterior, almacenando el hash del nuevo refresh token en MongoDB.
 
-1. **Instalar dependencias:**
-   ```bash
-   pnpm install
-   ```
-
-2. **Levantar MongoDB con Docker Compose:**
-   ```bash
-   docker compose up -d
-   ```
-
-3. **Configurar variables de entorno (`.env`):**
-   ```env
-   MONGODB_URI=mongodb://bootcamp:bootcamp123@localhost:27017/bootcamp_dev?authSource=admin
-   PORT=3000
-   NODE_ENV=development
-   ```
-
-4. **Ejecutar seed de datos iniciales:**
-   ```bash
-   pnpm seed
-   ```
-
-5. **Compilar el proyecto con TypeScript:**
-   ```bash
-   pnpm build
-   ```
-
-6. **Iniciar servidor en modo desarrollo:**
-   ```bash
-   pnpm dev
-   ```
-
-7. **Iniciar servidor en modo produccion:**
-   ```bash
-   pnpm start
-   ```
+### Atributos de las Cookies
+- `httpOnly: true`: Inaccesible desde JavaScript en el navegador, mitigando ataques de Cross-Site Scripting (XSS).
+- `sameSite: 'strict'`: Previene el envio de cookies en peticiones de origen cruzado, mitigando ataques de Cross-Site Request Forgery (CSRF).
+- `secure: true`: Habilitado automaticamente en entornos de produccion (`NODE_ENV=production`) para transmision sobre HTTPS.
 
 ---
 
-## 4. Catalogo de Endpoints de la API
+## 3. Variables de Entorno
 
-### Entidad Secundaria: Clientes (`/api/v1/clients`)
+Crear un archivo `.env` en la raiz del proyecto tomando como referencia `.env.example`:
 
-| Metodo | Ruta | Descripcion | Codigo HTTP |
-| :--- | :--- | :--- | :---: |
-| `GET` | `/api/v1/clients` | Listar todos los clientes ordenados alfabeticamente | `200 OK` |
-| `GET` | `/api/v1/clients/:id` | Obtener cliente por su ObjectId | `200 OK` / `400 Bad Request` / `404 Not Found` |
-| `POST` | `/api/v1/clients` | Crear un cliente corporativo | `201 Created` / `400 Bad Request` / `409 Conflict` |
-| `PUT` | `/api/v1/clients/:id` | Actualizar datos de un cliente | `200 OK` / `400 Bad Request` / `404 Not Found` / `409 Conflict` |
-| `DELETE` | `/api/v1/clients/:id` | Eliminar un cliente | `204 No Content` / `400 Bad Request` / `404 Not Found` |
-
-### Entidad Principal: Eventos (`/api/v1/events`)
-
-| Metodo | Ruta | Descripcion | Codigo HTTP |
-| :--- | :--- | :--- | :---: |
-| `GET` | `/health` | Chequeo de salud del servidor | `200 OK` |
-| `GET` | `/api/v1/events` | Listado paginado con `.populate('client')` | `200 OK` |
-| `GET` | `/api/v1/events/:id` | Detalle del evento con cliente populado | `200 OK` / `400 Bad Request` / `404 Not Found` |
-| `POST` | `/api/v1/events` | Crear evento (valida que client sea ObjectId valido) | `201 Created` / `400 Bad Request` / `409 Conflict` |
-| `PUT` | `/api/v1/events/:id` | Actualizar evento parcialmente | `200 OK` / `400 Bad Request` / `404 Not Found` / `409 Conflict` |
-| `DELETE` | `/api/v1/events/:id` | Eliminar evento por su ObjectId | `204 No Content` / `400 Bad Request` / `404 Not Found` |
-
----
-
-## 5. Ejemplos de Solicitudes y Respuestas
-
-### A. Listado Paginado con Populate (`GET /api/v1/events?page=1&limit=2`)
-
-**Respuesta HTTP 200 OK:**
-```json
-{
-  "data": [
-    {
-      "_id": "66da00000000000000000001",
-      "name": "Festival Estéreo Picnic 2026",
-      "code": "EVT-2026-001",
-      "category": "festival",
-      "price": 185000000,
-      "capacity": 45000,
-      "active": true,
-      "location": "Parque Simón Bolívar, Bogotá",
-      "date": "2026-03-27T14:00:00.000Z",
-      "client": {
-        "_id": "66da00000000000000000010",
-        "name": "Páramo Presenta SAS",
-        "email": "contacto@paramopresenta.com.co",
-        "phone": "+57 310 456 7890",
-        "company": "Páramo Producciones"
-      },
-      "createdAt": "2026-01-10T10:00:00.000Z",
-      "updatedAt": "2026-01-10T10:00:00.000Z"
-    }
-  ],
-  "total": 6,
-  "page": 1,
-  "totalPages": 3
-}
-```
-
-### B. Creacion Exitosa de Evento (`POST /api/v1/events`)
-
-**Cuerpo de la Peticion:**
-```json
-{
-  "name": "Concierto Filarmonica de Medellin",
-  "code": "EVT-2026-007",
-  "category": "concierto",
-  "price": 85000000,
-  "capacity": 1800,
-  "active": true,
-  "location": "Teatro Metropolitano, Medellin",
-  "date": "2026-09-25T19:30:00.000Z",
-  "client": "66da00000000000000000010"
-}
-```
-
-**Respuesta HTTP 201 Created:**
-```json
-{
-  "data": {
-    "_id": "66da00000000000000000007",
-    "name": "Concierto Filarmonica de Medellin",
-    "code": "EVT-2026-007",
-    "category": "concierto",
-    "price": 85000000,
-    "capacity": 1800,
-    "active": true,
-    "location": "Teatro Metropolitano, Medellin",
-    "date": "2026-09-25T19:30:00.000Z",
-    "client": {
-      "_id": "66da00000000000000000010",
-      "name": "Páramo Presenta SAS",
-      "email": "contacto@paramopresenta.com.co"
-    }
-  }
-}
-```
-
-### C. Conflicto por Clave Duplicada (Codigo 11000 -> HTTP 409)
-
-Si se intenta crear un evento con un codigo `code` ya existente (`EVT-2026-001`):
-
-**Respuesta HTTP 409 Conflict:**
-```json
-{
-  "error": "Conflict",
-  "message": "Ya existe un registro con ese valor único en la base de datos"
-}
-```
-
-### D. Error de Casteo de ObjectId (`CastError` -> HTTP 400)
-
-Si se realiza una peticion como `GET /api/v1/events/id-invalido`:
-
-**Respuesta HTTP 400 Bad Request:**
-```json
-{
-  "error": "Validation Error",
-  "message": "Datos de entrada inválidos",
-  "issues": [
-    {
-      "field": "",
-      "message": "El ID proporcionado no es un ObjectId de MongoDB válido"
-    }
-  ]
-}
+```env
+PORT=3000
+NODE_ENV=development
+MONGODB_URI=mongodb://localhost:27017/productora_eventos_auth
+JWT_ACCESS_SECRET=clave_secreta_para_access_tokens_productora_2026
+JWT_REFRESH_SECRET=clave_secreta_para_refresh_tokens_productora_2026
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
 ```
 
 ---
 
-## 6. Manejo de Errores Especificos de MongoDB
+## 4. Endpoints de la API
 
-1. **`MongoServerError` 11000 (Duplicate Key):** Traducido a HTTP `409 Conflict`.
-2. **`CastError` (Mongoose):** Traducido a HTTP `400 Bad Request`.
-3. **`ValidationError` (Mongoose):** Traducido a HTTP `400 Bad Request`.
-4. **Recurso `null`:** Traducido a HTTP `404 Not Found` mediante la clase `AppError`.
+### Autenticacion (`/api/v1/auth`)
+
+| Metodo | Ruta | Descripcion | Requiere Autenticacion |
+|---|---|---|---|
+| POST | `/api/v1/auth/register` | Registro de nuevos usuarios y asignacion inicial de tokens | No |
+| POST | `/api/v1/auth/login` | Autenticacion de usuario con emision de cookies | No |
+| POST | `/api/v1/auth/refresh` | Rotacion y renovacion de tokens de acceso y refresco | No (Requiere cookie de refresco) |
+| POST | `/api/v1/auth/logout` | Cierre de sesion, revocacion en BD y limpieza de cookies | Si |
+| GET | `/api/v1/auth/me` | Obtencion de los datos del usuario autenticado actual | Si |
+
+### Eventos Protegidos (`/api/v1/events`)
+
+Todas las rutas de eventos requieren autenticacion valida via Access Token (cookie o Bearer header).
+
+| Metodo | Ruta | Descripcion |
+|---|---|---|
+| GET | `/api/v1/events` | Listar todos los eventos (soporta filtros por query: `?status=...&type=...`) |
+| GET | `/api/v1/events/:id` | Obtener detalle de un evento por su ObjectId de MongoDB |
+| POST | `/api/v1/events` | Crear un nuevo evento asignando automaticamente `createdBy` al usuario autenticado |
+| PATCH | `/api/v1/events/:id` | Actualizar parcialmente los datos de un evento |
+| DELETE | `/api/v1/events/:id` | Eliminar un evento existente |
+
+---
+
+## 5. Modelos de Datos
+
+### Usuario (`User`)
+- `name`: String (minimo 2 caracteres).
+- `email`: String unico, indexado y normalizado a minusculas.
+- `password`: String hasheado con bcrypt (oculto en consultas por defecto).
+- `role`: `'user' | 'admin' | 'producer'`.
+- `refreshToken`: String hasheado con bcrypt (oculto en consultas por defecto).
+- `createdAt` / `updatedAt`: Timestamps automaticos.
+
+### Evento (`Event`)
+- `title`: String unico y descriptivo del evento.
+- `description`: String con el detalle de la actividad.
+- `date`: Fecha programada del evento.
+- `location`: Ubicacion fisica del evento.
+- `budgetCOP`: Presupuesto total asignado estrictamente en Pesos Colombianos (COP).
+- `type`: Tipo de evento (`corporate`, `wedding`, `concert`, `conference`, `social`, `festival`).
+- `status`: Estado del evento (`planning`, `confirmed`, `in_progress`, `completed`, `cancelled`).
+- `attendeesCount`: Cantidad estimada o confirmada de asistentes.
+- `createdBy`: Referencia al ObjectId del usuario responsable.
+- `createdAt` / `updatedAt`: Timestamps automaticos.
+
+---
+
+## 6. Instrucciones de Ejecucion
+
+### Instalacion de Dependencias
+```bash
+pnpm install
+```
+
+### Ejecucion con Base de Datos en Docker
+Para levantar una instancia local de MongoDB:
+```bash
+docker compose up -d
+```
+
+### Inicializacion de Datos de Prueba (Seed)
+```bash
+pnpm run seed
+```
+Usuarios creados por defecto:
+- Administrador: `admin@productora.com` (Contrasena: `Password123!`)
+- Productor: `productor@productora.com` (Contrasena: `Password123!`)
+
+### Modo Desarrollo
+```bash
+pnpm run dev
+```
+
+### Compilacion a Produccion
+```bash
+pnpm run build
+pnpm start
+```

@@ -1,86 +1,83 @@
 import { Request, Response, NextFunction } from 'express';
-import * as service from '../services/events.service';
-import {
-  createEventSchema,
-  updateEventSchema,
-  objectIdSchema,
-} from '../schemas/event.schema';
+import { eventsService } from '../services/events.service.js';
+import { AppError } from '../errors/AppError.js';
 
-export async function getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const page = req.query['page'] ? Number(req.query['page']) : 1;
-    const limit = req.query['limit'] ? Number(req.query['limit']) : 10;
-    const search = req.query['search'] as string | undefined;
+export class EventsController {
+  async getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const filter: Record<string, unknown> = {};
+      if (req.query['status']) {
+        filter['status'] = req.query['status'];
+      }
+      if (req.query['type']) {
+        filter['type'] = req.query['type'];
+      }
 
-    const result = await service.getAll(page, limit, search);
-    res.json(result);
-  } catch (err: unknown) {
-    next(err);
+      const events = await eventsService.getAll(filter);
+      res.status(200).json({
+        success: true,
+        count: events.length,
+        data: events
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = String(req.params['id']);
+      const event = await eventsService.getById(id);
+      res.status(200).json({
+        success: true,
+        data: event
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async create(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user?.sub) {
+        throw new AppError(401, 'No autenticado: identificador de usuario ausente');
+      }
+
+      const event = await eventsService.create(req.body, req.user.sub);
+      res.status(201).json({
+        success: true,
+        data: event
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async update(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = String(req.params['id']);
+      const event = await eventsService.update(id, req.body);
+      res.status(200).json({
+        success: true,
+        data: event
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = String(req.params['id']);
+      await eventsService.delete(id);
+      res.status(200).json({
+        success: true,
+        message: 'Evento eliminado exitosamente'
+      });
+    } catch (error) {
+      next(error);
+    }
   }
 }
 
-export async function getById(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const parseId = objectIdSchema.safeParse(req.params['id']);
-    if (!parseId.success) {
-      next(parseId.error);
-      return;
-    }
-
-    const event = await service.getById(parseId.data);
-    res.json({ data: event });
-  } catch (err: unknown) {
-    next(err);
-  }
-}
-
-export async function create(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const parsed = createEventSchema.safeParse(req.body);
-    if (!parsed.success) {
-      next(parsed.error);
-      return;
-    }
-
-    const event = await service.create(parsed.data);
-    res.status(201).json({ data: event });
-  } catch (err: unknown) {
-    next(err);
-  }
-}
-
-export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const parseId = objectIdSchema.safeParse(req.params['id']);
-    if (!parseId.success) {
-      next(parseId.error);
-      return;
-    }
-
-    const parsed = updateEventSchema.safeParse(req.body);
-    if (!parsed.success) {
-      next(parsed.error);
-      return;
-    }
-
-    const updated = await service.update(parseId.data, parsed.data);
-    res.json({ data: updated });
-  } catch (err: unknown) {
-    next(err);
-  }
-}
-
-export async function remove(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const parseId = objectIdSchema.safeParse(req.params['id']);
-    if (!parseId.success) {
-      next(parseId.error);
-      return;
-    }
-
-    await service.remove(parseId.data);
-    res.status(204).send();
-  } catch (err: unknown) {
-    next(err);
-  }
-}
+export const eventsController = new EventsController();

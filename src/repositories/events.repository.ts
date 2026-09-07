@@ -1,68 +1,43 @@
-import { MongoServerError } from 'mongodb';
 import mongoose from 'mongoose';
-import { Event } from '../models/event.model';
-import { AppError } from '../errors/AppError';
-import type { CreateEventDto, UpdateEventDto } from '../schemas/event.schema';
+import { EventModel, IEvent } from '../models/event.model.js';
+import { CreateEventDto, UpdateEventDto } from '../schemas/event.schema.js';
+import { AppError } from '../errors/AppError.js';
 
-export interface PaginatedResult<T> {
-  data: T[];
-  total: number;
-  page: number;
-  totalPages: number;
+export async function findAll(filter: Record<string, unknown> = {}): Promise<IEvent[]> {
+  return EventModel.find(filter)
+    .populate('createdBy', 'name email role')
+    .sort({ createdAt: -1 })
+    .lean();
 }
 
-export async function findAll(
-  page: number,
-  limit: number,
-  search?: string
-): Promise<PaginatedResult<unknown>> {
-  const skip = (page - 1) * limit;
-  const filter = search ? { name: { $regex: search, $options: 'i' } } : {};
-
-  const [data, total] = await Promise.all([
-    Event.find(filter)
-      .populate('client')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
-    Event.countDocuments(filter),
-  ]);
-
-  return {
-    data,
-    total,
-    page,
-    totalPages: Math.ceil(total / limit) || 1,
-  };
-}
-
-export async function findById(id: string): Promise<unknown> {
+export async function findById(id: string): Promise<IEvent | null> {
   try {
-    const event = await Event.findById(id).populate('client').lean();
-    if (!event) {
-      throw new AppError(404, `Evento con ID ${id} no encontrado`);
-    }
-    return event;
+    return await EventModel.findById(id)
+      .populate('createdBy', 'name email role')
+      .lean();
   } catch (err: unknown) {
     if (err instanceof mongoose.Error.CastError) {
-      throw new AppError(400, `ID de evento con formato inválido: ${id}`);
+      throw new AppError(400, `ID de evento con formato invalido: ${id}`);
     }
     throw err;
   }
 }
 
-export async function create(dto: CreateEventDto): Promise<unknown> {
+export async function create(
+  data: CreateEventDto & { createdBy: string | mongoose.Types.ObjectId }
+): Promise<IEvent> {
   try {
-    const event = await Event.create(dto);
-    await event.populate('client');
+    const event = await EventModel.create({
+      ...data,
+      date: new Date(data.date),
+      createdBy: new mongoose.Types.ObjectId(data.createdBy),
+    });
+    await event.populate('createdBy', 'name email role');
     return event.toObject();
   } catch (err: unknown) {
-    if (err instanceof MongoServerError && err.code === 11000) {
-      throw new AppError(409, 'Ya existe un evento registrado con ese código único');
-    }
-    if (err instanceof mongoose.Error.CastError) {
-      throw new AppError(400, 'El ID de la referencia al cliente no tiene un formato válido');
+    const anyErr = err as { code?: number };
+    if (anyErr?.code === 11000) {
+      throw new AppError(409, 'Ya existe un evento registrado con ese codigo unico');
     }
     if (err instanceof mongoose.Error.ValidationError) {
       throw new AppError(400, err.message);
@@ -71,25 +46,29 @@ export async function create(dto: CreateEventDto): Promise<unknown> {
   }
 }
 
-export async function update(id: string, dto: UpdateEventDto): Promise<unknown> {
+export async function updateById(
+  id: string,
+  data: UpdateEventDto
+): Promise<IEvent | null> {
   try {
-    const event = await Event.findByIdAndUpdate(id, dto, {
+    const updatePayload: Record<string, unknown> = { ...data };
+    if (data.date) {
+      updatePayload['date'] = new Date(data.date);
+    }
+
+    return await EventModel.findByIdAndUpdate(id, updatePayload, {
       new: true,
       runValidators: true,
     })
-      .populate('client')
+      .populate('createdBy', 'name email role')
       .lean();
-
-    if (!event) {
-      throw new AppError(404, `Evento con ID ${id} no encontrado`);
-    }
-    return event;
   } catch (err: unknown) {
     if (err instanceof mongoose.Error.CastError) {
-      throw new AppError(400, `ID con formato inválido: ${id}`);
+      throw new AppError(400, `ID con formato invalido: ${id}`);
     }
-    if (err instanceof MongoServerError && err.code === 11000) {
-      throw new AppError(409, 'Ya existe un evento registrado con ese código único');
+    const anyErr = err as { code?: number };
+    if (anyErr?.code === 11000) {
+      throw new AppError(409, 'Ya existe un evento registrado con ese codigo unico');
     }
     if (err instanceof mongoose.Error.ValidationError) {
       throw new AppError(400, err.message);
@@ -98,16 +77,22 @@ export async function update(id: string, dto: UpdateEventDto): Promise<unknown> 
   }
 }
 
-export async function remove(id: string): Promise<void> {
+export async function deleteById(id: string): Promise<boolean> {
   try {
-    const event = await Event.findByIdAndDelete(id);
-    if (!event) {
-      throw new AppError(404, `Evento con ID ${id} no encontrado`);
-    }
+    const deleted = await EventModel.findByIdAndDelete(id);
+    return deleted !== null;
   } catch (err: unknown) {
     if (err instanceof mongoose.Error.CastError) {
-      throw new AppError(400, `ID con formato inválido: ${id}`);
+      throw new AppError(400, `ID con formato invalido: ${id}`);
     }
     throw err;
   }
 }
+
+export const eventsRepository = {
+  findAll,
+  findById,
+  create,
+  updateById,
+  deleteById,
+};
