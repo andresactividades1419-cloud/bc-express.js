@@ -1,12 +1,30 @@
 import { Router } from 'express';
-import * as ctrl from '../controllers/events.controller';
+import { eventsController } from '../controllers/events.controller.js';
+import { validateBody, validateParams } from '../middlewares/validate.js';
+import { createEventSchema, updateEventSchema, objectIdSchema } from '../schemas/event.schema.js';
+import { authenticate } from '../middlewares/auth.middleware.js';
 
-const router = Router();
+export const eventsRouter = Router();
 
-router.get('/', ctrl.getAll);
-router.get('/:id', ctrl.getById);
-router.post('/', ctrl.create);
-router.put('/:id', ctrl.update);
-router.delete('/:id', ctrl.remove);
+// Todas las rutas de eventos requieren autenticacion
+eventsRouter.use(authenticate);
 
-export default router;
+eventsRouter.get('/', (req, res, next) => {
+  eventsController.getAll(req, res, next);
+});
+
+eventsRouter.get('/:id', validateParams(objectIdSchema), (req, res, next) => {
+  eventsController.getById(req, res, next);
+});
+
+eventsRouter.post('/', validateBody(createEventSchema), (req, res, next) => {
+  eventsController.create(req, res, next);
+});
+
+eventsRouter.patch('/:id', validateParams(objectIdSchema), validateBody(updateEventSchema), (req, res, next) => {
+  eventsController.update(req, res, next);
+});
+
+eventsRouter.delete('/:id', validateParams(objectIdSchema), (req, res, next) => {
+  eventsController.delete(req, res, next);
+});
