@@ -1,4 +1,4 @@
-import { Schema, model, Types, Document } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export const EVENT_CATEGORIES = [
   'concierto',
@@ -11,7 +11,7 @@ export const EVENT_CATEGORIES = [
 
 export type EventCategory = (typeof EVENT_CATEGORIES)[number];
 
-export interface IEvent {
+export interface IEvent extends Document {
   name: string;
   code: string;
   category: EventCategory;
@@ -20,12 +20,10 @@ export interface IEvent {
   active: boolean;
   location: string;
   date: Date;
-  client: Types.ObjectId;
+  createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
-
-export type EventDocument = IEvent & Document;
 
 const eventSchema = new Schema<IEvent>(
   {
@@ -75,15 +73,13 @@ const eventSchema = new Schema<IEvent>(
       type: Date,
       required: [true, 'La fecha del evento es obligatoria'],
     },
-    client: {
+    createdBy: {
       type: Schema.Types.ObjectId,
-      ref: 'Client',
-      required: [true, 'La referencia al cliente (client) es obligatoria'],
+      ref: 'User',
+      required: [true, 'El usuario creador (createdBy) es obligatorio'],
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-export const Event = model<IEvent>('Event', eventSchema);
+export const EventModel = mongoose.model<IEvent>('Event', eventSchema);

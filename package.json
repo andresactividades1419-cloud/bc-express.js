@@ -1,7 +1,7 @@
 {
-  "name": "bc-expressjs-week-06-productora-eventos",
+  "name": "bc-expressjs-week-07-productora-eventos",
   "version": "1.0.0",
-  "description": "Semana 06: MongoDB y Mongoose ORM para Productora de Eventos",
+  "description": "Semana 07: Autenticacion JWT, bcrypt y seguridad para Productora de Eventos",
   "main": "dist/server.js",
   "engines": {
     "node": ">=22.0.0"
@@ -14,16 +14,21 @@
     "seed": "tsx src/seed.ts"
   },
   "dependencies": {
-    "dotenv": "16.4.7",
+    "bcrypt": "5.1.1",
+    "cookie-parser": "1.4.7",
+    "dotenv": "16.5.0",
     "express": "5.1.0",
-    "mongodb": "^6.14.0",
+    "jsonwebtoken": "9.0.2",
     "mongoose": "8.14.0",
     "morgan": "1.10.1",
     "winston": "3.17.0",
     "zod": "4.3.6"
   },
   "devDependencies": {
+    "@types/bcrypt": "5.0.2",
+    "@types/cookie-parser": "1.4.8",
     "@types/express": "5.0.1",
+    "@types/jsonwebtoken": "9.0.9",
     "@types/morgan": "1.9.10",
     "@types/node": "22.15.3",
     "tsx": "4.19.4",
