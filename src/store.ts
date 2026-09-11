@@ -11,8 +11,11 @@ class EventStore {
   private events: Event[] = [];
   private currentIdCounter = 1;
 
+  /** Se resuelve cuando el catálogo terminó de cargarse desde data/events.json */
+  readonly ready: Promise<void>;
+
   constructor() {
-    this.init();
+    this.ready = this.init();
   }
 
   /**
