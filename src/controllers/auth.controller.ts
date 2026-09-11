@@ -31,8 +31,7 @@ export class AuthController {
       res.status(201).json({
         success: true,
         data: {
-          user: result.user,
-          accessToken: result.tokens.accessToken
+          user: result.user
         }
       });
     } catch (error) {
@@ -50,8 +49,7 @@ export class AuthController {
       res.status(200).json({
         success: true,
         data: {
-          user: result.user,
-          accessToken: result.tokens.accessToken
+          user: result.user
         }
       });
     } catch (error) {
@@ -73,9 +71,7 @@ export class AuthController {
 
       res.status(200).json({
         success: true,
-        data: {
-          accessToken: result.tokens.accessToken
-        }
+        message: 'Tokens renovados exitosamente'
       });
     } catch (error) {
       next(error);

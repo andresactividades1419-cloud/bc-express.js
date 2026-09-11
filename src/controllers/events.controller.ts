@@ -6,11 +6,11 @@ export class EventsController {
   async getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const filter: Record<string, unknown> = {};
-      if (req.query['status']) {
-        filter['status'] = req.query['status'];
+      if (req.query['category']) {
+        filter['category'] = req.query['category'];
       }
-      if (req.query['type']) {
-        filter['type'] = req.query['type'];
+      if (req.query['active'] !== undefined) {
+        filter['active'] = req.query['active'] === 'true';
       }
 
       const events = await eventsService.getAll(filter);
@@ -70,10 +70,7 @@ export class EventsController {
     try {
       const id = String(req.params['id']);
       await eventsService.delete(id);
-      res.status(200).json({
-        success: true,
-        message: 'Evento eliminado exitosamente'
-      });
+      res.status(204).send();
     } catch (error) {
       next(error);
     }

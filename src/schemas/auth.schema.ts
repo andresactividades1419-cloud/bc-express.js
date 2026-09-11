@@ -14,7 +14,9 @@ export const registerSchema = z.object({
     .string({ error: 'name debe ser un texto' })
     .trim()
     .min(2, { error: 'El nombre debe tener al menos 2 caracteres' }),
-  role: z.enum(['user', 'admin', 'producer']).optional().default('user'),
+  // El rol NUNCA se acepta desde el cliente en el auto-registro: asignar
+  // 'admin' o 'producer' es una operacion administrativa aparte, no algo
+  // que un usuario anonimo pueda elegir enviando ese campo en el body.
 });
 
 export const loginSchema = z.object({

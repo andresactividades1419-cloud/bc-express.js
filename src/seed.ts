@@ -35,36 +35,36 @@ async function seed(): Promise<void> {
 
     const sampleEvents = [
       {
-        title: 'Festival Musical del Cafe 2026',
-        description: 'Encuentro cultural y musical al aire libre en el Eje Cafetero',
-        date: new Date('2026-11-20T14:00:00.000Z'),
+        name: 'Festival Musical del Cafe 2026',
+        code: 'EVT-2026-101',
+        category: 'festival',
+        price: 85000000,
+        capacity: 2500,
+        active: true,
         location: 'Parque Metropolitano, Armenia, Quindio',
-        budgetCOP: 85000000,
-        type: 'festival',
-        status: 'confirmed',
-        attendeesCount: 2500,
+        date: new Date('2026-11-20T14:00:00.000Z'),
         createdBy: adminUser._id
       },
       {
-        title: 'Convencion Nacional de Tecnologia',
-        description: 'Conferencias magistrales y networking empresarial',
-        date: new Date('2026-10-15T08:00:00.000Z'),
+        name: 'Convencion Nacional de Tecnologia',
+        code: 'EVT-2026-102',
+        category: 'conferencia',
+        price: 45000000,
+        capacity: 600,
+        active: true,
         location: 'Centro de Convenciones Agora, Bogota D.C.',
-        budgetCOP: 45000000,
-        type: 'corporate',
-        status: 'in_progress',
-        attendeesCount: 600,
+        date: new Date('2026-10-15T08:00:00.000Z'),
         createdBy: adminUser._id
       },
       {
-        title: 'Gala Anual de Fin de Ano',
-        description: 'Cena de gala y premiacion empresarial para asociados',
-        date: new Date('2026-12-18T19:00:00.000Z'),
+        name: 'Gala Anual de Fin de Ano',
+        code: 'EVT-2026-103',
+        category: 'corporativo',
+        price: 32000000,
+        capacity: 300,
+        active: true,
         location: 'Hotel Dann Carlton, Medellin, Antioquia',
-        budgetCOP: 32000000,
-        type: 'social',
-        status: 'planning',
-        attendeesCount: 300,
+        date: new Date('2026-12-18T19:00:00.000Z'),
         createdBy: standardUser._id
       }
     ];

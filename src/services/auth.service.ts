@@ -14,16 +14,19 @@ export class AuthService {
   async register(input: RegisterDto) {
     const existing = await usersRepository.findByEmail(input.email);
     if (existing) {
-      throw new AppError('El correo electronico ya esta registrado', 409);
+      throw new AppError(409, 'El correo electronico ya esta registrado');
     }
 
     const hashedPassword = await bcrypt.hash(input.password, this.saltRounds);
 
+    // El rol nunca se toma del cuerpo de la peticion: el schema de Mongoose
+    // (user.model.ts) asigna 'user' por defecto. Asignar 'admin' o
+    // 'producer' es una operacion administrativa, no algo que un
+    // usuario anonimo pueda elegir por si mismo.
     const user = await usersRepository.create({
       name: input.name,
       email: input.email.toLowerCase(),
-      password: hashedPassword,
-      role: input.role ?? 'user'
+      password: hashedPassword
     });
 
     const tokens = this.generateTokens(user._id.toString(), user.email, user.role);
@@ -45,12 +48,12 @@ export class AuthService {
   async login(input: LoginDto) {
     const user = await usersRepository.findByEmailWithPassword(input.email.toLowerCase());
     if (!user) {
-      throw new AppError('Credenciales invalidas', 401);
+      throw new AppError(401, 'Credenciales invalidas');
     }
 
     const isMatch = await bcrypt.compare(input.password, user.password);
     if (!isMatch) {
-      throw new AppError('Credenciales invalidas', 401);
+      throw new AppError(401, 'Credenciales invalidas');
     }
 
     const tokens = this.generateTokens(user._id.toString(), user.email, user.role);
@@ -74,19 +77,19 @@ export class AuthService {
     try {
       payload = verifyRefreshToken(refreshToken);
     } catch {
-      throw new AppError('Token de refresco invalido o expirado', 401);
+      throw new AppError(401, 'Token de refresco invalido o expirado');
     }
 
     const user = await usersRepository.findByIdWithTokens(payload.sub);
     if (!user || !user.refreshToken) {
-      throw new AppError('Acceso no autorizado', 401);
+      throw new AppError(401, 'Acceso no autorizado');
     }
 
     const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
     if (!isMatch) {
       // Posible reuso de token: revocar token de refresco
       await usersRepository.updateRefreshToken(user._id.toString(), null);
-      throw new AppError('Token de refresco revocado o invalido', 401);
+      throw new AppError(401, 'Token de refresco revocado o invalido');
     }
 
     const tokens = this.generateTokens(user._id.toString(), user.email, user.role);
@@ -104,7 +107,7 @@ export class AuthService {
   async getMe(userId: string) {
     const user = await usersRepository.findById(userId);
     if (!user) {
-      throw new AppError('Usuario no encontrado', 404);
+      throw new AppError(404, 'Usuario no encontrado');
     }
     return {
       id: user._id.toString(),
