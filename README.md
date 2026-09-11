@@ -80,11 +80,11 @@ Todas las rutas de eventos requieren autenticacion valida via Access Token (cook
 
 | Metodo | Ruta | Descripcion |
 |---|---|---|
-| GET | `/api/v1/events` | Listar todos los eventos (soporta filtros por query: `?status=...&type=...`) |
+| GET | `/api/v1/events` | Listar todos los eventos (soporta filtros por query: `?category=...&active=...`) |
 | GET | `/api/v1/events/:id` | Obtener detalle de un evento por su ObjectId de MongoDB |
-| POST | `/api/v1/events` | Crear un nuevo evento asignando automaticamente `createdBy` al usuario autenticado |
+| POST | `/api/v1/events` | Crear un nuevo evento asignando automaticamente `createdBy` al usuario autenticado (201) |
 | PATCH | `/api/v1/events/:id` | Actualizar parcialmente los datos de un evento |
-| DELETE | `/api/v1/events/:id` | Eliminar un evento existente |
+| DELETE | `/api/v1/events/:id` | Eliminar un evento existente (204 No Content) |
 
 ---
 
@@ -99,14 +99,14 @@ Todas las rutas de eventos requieren autenticacion valida via Access Token (cook
 - `createdAt` / `updatedAt`: Timestamps automaticos.
 
 ### Evento (`Event`)
-- `title`: String unico y descriptivo del evento.
-- `description`: String con el detalle de la actividad.
-- `date`: Fecha programada del evento.
+- `name`: String unico y descriptivo del evento.
+- `code`: Codigo alfanumerico unico del evento (ej. `EVT-2026-101`).
+- `category`: Categoria del evento (`concierto`, `boda`, `conferencia`, `corporativo`, `festival`, `exposicion`).
+- `price`: Presupuesto asignado estrictamente en Pesos Colombianos (COP).
+- `capacity`: Aforo estimado del evento (por defecto 100).
+- `active`: Estado activo/inactivo del evento (por defecto `true`).
 - `location`: Ubicacion fisica del evento.
-- `budgetCOP`: Presupuesto total asignado estrictamente en Pesos Colombianos (COP).
-- `type`: Tipo de evento (`corporate`, `wedding`, `concert`, `conference`, `social`, `festival`).
-- `status`: Estado del evento (`planning`, `confirmed`, `in_progress`, `completed`, `cancelled`).
-- `attendeesCount`: Cantidad estimada o confirmada de asistentes.
+- `date`: Fecha programada del evento.
 - `createdBy`: Referencia al ObjectId del usuario responsable.
 - `createdAt` / `updatedAt`: Timestamps automaticos.
 
