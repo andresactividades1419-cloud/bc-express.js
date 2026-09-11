@@ -1,4 +1,11 @@
-import mongoose, { Document, Schema, Types } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
+
+// ============================================
+// Recurso principal — Dominio: Productora de Eventos
+// ============================================
+// createdBy guarda el ID del usuario (productor) que creó el evento.
+// Esto permite que el dueño pueda editar SU evento, pero solo un admin
+// puede eliminarlo.
 
 export const EVENT_CATEGORIES = [
   'concierto',
@@ -20,66 +27,24 @@ export interface IEvent extends Document {
   active: boolean;
   location: string;
   date: Date;
-  createdBy: Types.ObjectId;
+  createdBy: string; // user ID — no eliminar
   createdAt: Date;
   updatedAt: Date;
 }
 
 const eventSchema = new Schema<IEvent>(
   {
-    name: {
-      type: String,
-      required: [true, 'El nombre del evento es obligatorio'],
-      trim: true,
-      maxlength: [150, 'El nombre no puede exceder 150 caracteres'],
-    },
-    code: {
-      type: String,
-      required: [true, 'El código del evento es obligatorio'],
-      unique: true,
-      trim: true,
-      uppercase: true,
-      maxlength: [30, 'El código no puede exceder 30 caracteres'],
-    },
-    category: {
-      type: String,
-      required: [true, 'La categoría es obligatoria'],
-      enum: {
-        values: EVENT_CATEGORIES,
-        message: 'Categoría no válida. Permitidas: {VALUES}',
-      },
-    },
-    price: {
-      type: Number,
-      required: [true, 'El presupuesto asignado en COP es obligatorio'],
-      min: [0, 'El presupuesto no puede ser negativo'],
-    },
-    capacity: {
-      type: Number,
-      default: 100,
-      min: [0, 'El aforo no puede ser negativo'],
-    },
-    active: {
-      type: Boolean,
-      default: true,
-    },
-    location: {
-      type: String,
-      required: [true, 'La locación es obligatoria'],
-      trim: true,
-      maxlength: [200, 'La locación no puede exceder 200 caracteres'],
-    },
-    date: {
-      type: Date,
-      required: [true, 'La fecha del evento es obligatoria'],
-    },
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'El usuario creador (createdBy) es obligatorio'],
-    },
+    name: { type: String, required: true, trim: true, maxlength: 150 },
+    code: { type: String, required: true, unique: true, trim: true, uppercase: true, maxlength: 30 },
+    category: { type: String, required: true, enum: EVENT_CATEGORIES },
+    price: { type: Number, required: true, min: 0 },
+    capacity: { type: Number, default: 100, min: 0 },
+    active: { type: Boolean, default: true },
+    location: { type: String, required: true, trim: true, maxlength: 200 },
+    date: { type: Date, required: true },
+    createdBy: { type: String, required: true }, // user ID
   },
   { timestamps: true }
 );
 
-export const EventModel = mongoose.model<IEvent>('Event', eventSchema);
+export const Event = model<IEvent>('Event', eventSchema);
