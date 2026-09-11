@@ -1,48 +1,24 @@
-import mongoose, { Document, Schema, Types } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
 
-export type UserRole = 'user' | 'admin' | 'producer';
+export type UserRole = 'user' | 'admin';
 
 export interface IUser extends Document {
-  _id: Types.ObjectId;
+  name: string;
   email: string;
   password: string;
-  name: string;
   role: UserRole;
   refreshToken?: string;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 const userSchema = new Schema<IUser>(
   {
-    email: {
-      type: String,
-      required: [true, 'El correo electronico es obligatorio'],
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-    password: {
-      type: String,
-      required: [true, 'La contrasena es obligatoria'],
-      select: false,
-    },
-    name: {
-      type: String,
-      required: [true, 'El nombre completo es obligatorio'],
-      trim: true,
-    },
-    role: {
-      type: String,
-      enum: ['user', 'admin', 'producer'],
-      default: 'user',
-    },
-    refreshToken: {
-      type: String,
-      select: false,
-    },
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    password: { type: String, required: true, select: false },
+    role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    refreshToken: { type: String, select: false },
   },
   { timestamps: true }
 );
 
-export const UserModel = mongoose.model<IUser>('User', userSchema);
+export const User = model<IUser>('User', userSchema);

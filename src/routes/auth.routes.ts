@@ -1,27 +1,14 @@
 import { Router } from 'express';
-import { authController } from '../controllers/auth.controller.js';
-import { validateBody } from '../middlewares/validate.js';
-import { registerSchema, loginSchema } from '../schemas/auth.schema.js';
-import { authenticate } from '../middlewares/auth.middleware.js';
+import { register, login, refresh, logout, me } from '../controllers/auth.controller.js';
+import { authMiddleware } from '../middlewares/auth.middleware.js';
+import { authLimiter } from '../config/security.js';
 
-export const authRouter = Router();
+const router = Router();
 
-authRouter.post('/register', validateBody(registerSchema), (req, res, next) => {
-  authController.register(req, res, next);
-});
+router.post('/register', authLimiter, register);
+router.post('/login', authLimiter, login);
+router.post('/refresh', refresh);
+router.post('/logout', authMiddleware, logout);
+router.get('/me', authMiddleware, me);
 
-authRouter.post('/login', validateBody(loginSchema), (req, res, next) => {
-  authController.login(req, res, next);
-});
-
-authRouter.post('/refresh', (req, res, next) => {
-  authController.refresh(req, res, next);
-});
-
-authRouter.post('/logout', authenticate, (req, res, next) => {
-  authController.logout(req, res, next);
-});
-
-authRouter.get('/me', authenticate, (req, res, next) => {
-  authController.me(req, res, next);
-});
+export default router;
