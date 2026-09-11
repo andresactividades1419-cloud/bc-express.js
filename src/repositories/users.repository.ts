@@ -1,38 +1,24 @@
-import { UserModel, IUser } from '../models/user.model.js';
-import { RegisterDto } from '../schemas/auth.schema.js';
+import { User, IUser } from '../models/user.model.js';
 
-export async function findByEmail(email: string): Promise<IUser | null> {
-  return UserModel.findOne({ email });
+export async function findUserByEmail(email: string): Promise<IUser | null> {
+  return User.findOne({ email }).select('+password +refreshToken');
 }
 
-export async function findByEmailWithPassword(email: string): Promise<IUser | null> {
-  return UserModel.findOne({ email }).select('+password');
+export async function findUserById(id: string): Promise<IUser | null> {
+  return User.findById(id);
 }
 
-export async function findByIdWithTokens(id: string): Promise<IUser | null> {
-  return UserModel.findById(id).select('+password +refreshToken');
-}
-
-export async function findById(id: string): Promise<IUser | null> {
-  return UserModel.findById(id);
-}
-
-export async function create(dto: RegisterDto): Promise<IUser> {
-  return UserModel.create(dto);
+export async function createUser(data: {
+  name: string;
+  email: string;
+  password: string;
+}): Promise<IUser> {
+  return User.create(data);
 }
 
 export async function updateRefreshToken(
-  id: string,
-  hashedToken: string | null
+  userId: string,
+  refreshToken: string | null
 ): Promise<void> {
-  await UserModel.findByIdAndUpdate(id, { refreshToken: hashedToken ?? null });
+  await User.findByIdAndUpdate(userId, { refreshToken });
 }
-
-export const usersRepository = {
-  findByEmail,
-  findByEmailWithPassword,
-  findByIdWithTokens,
-  findById,
-  create,
-  updateRefreshToken
-};

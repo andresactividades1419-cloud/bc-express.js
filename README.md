@@ -1,145 +1,118 @@
-# Productora de Eventos - Semana 07: Autenticacion con JWT, Cookies HttpOnly y Hashing bcrypt
+# Productora de Eventos - Semana 08: RBAC y Capas de Seguridad
 
-Sistema de gestion y produccion de eventos con autenticacion robusta basada en JSON Web Tokens (JWT), proteccion de contrasenas mediante hashing con bcrypt, transporte seguro en cookies HttpOnly y rotacion de Refresh Tokens.
+API REST con autenticacion JWT, autorizacion basada en roles (RBAC) y las cinco capas de seguridad exigidas: cabeceras HTTP endurecidas (Helmet), CORS con lista blanca, rate limiting diferenciado, sanitizacion de entradas contra NoSQL injection, y manejo de errores sin fuga de informacion interna.
 
-Todos los presupuestos y valores monetarios se gestionan exclusivamente en Pesos Colombianos (COP).
-
----
-
-## 1. Arquitectura y Diseno del Sistema
-
-El proyecto implementa una arquitectura modular por capas con separacion clara de responsabilidades:
-
-- **Models (`src/models/`):** Esquemas de Mongoose con tipos de TypeScript (`UserModel`, `EventModel`). El modelo de usuario omite por defecto campos sensibles (`password`, `refreshToken`) mediante `select: false`.
-- **Repositories (`src/repositories/`):** Capa de acceso a datos directa sobre MongoDB, encapsulando consultas y manejo de errores de bajo nivel.
-- **Services (`src/services/`):** Capa de logica de negocio, generacion de tokens, verificacion de hashes y orquestacion.
-- **Controllers (`src/controllers/`):** Controladores HTTP encargados de interpretar solicitudes, gestionar cookies HttpOnly y enviar respuestas estructuradas.
-- **Middlewares (`src/middlewares/`):** Autenticacion (`authenticate`), autorizacion por roles (`authorize`), validacion de esquemas Zod (`validateBody`, `validateParams`), y manejo centralizado de errores (`errorHandler`).
-- **Schemas (`src/schemas/`):** Validacion rigurosa de entradas en tiempo de ejecucion con Zod.
-- **Utils (`src/utils/`):** Firmado y verificacion tipada de tokens JWT de acceso y refresco.
-- **Config (`src/config/`):** Registro de eventos y peticiones mediante Winston y Morgan.
+Todos los presupuestos y valores monetarios se gestionan en Pesos Colombianos (COP).
 
 ---
 
-## 2. Estrategia de Seguridad y Autenticacion
+## 1. Dominio y Recurso Principal
 
-### Hashing de Contrasenas
-- Se emplea la libreria `bcrypt` con un costo de 10 rondas de sal (salt rounds).
-- Las contrasenas nunca se almacenan en texto plano.
-- En los endpoints de inicio de sesion se mitiga la enumeracion de usuarios retornando mensajes genericos (`Credenciales invalidas`) tanto para correos no registrados como para contrasenas erroneas.
+**Recurso principal: `Event` (evento/produccion).** Cada evento pertenece a la persona que lo creo (`createdBy`), lo cual permite aplicar autorizacion a nivel de dueno ademas de por rol.
 
-### Ciclo de Vida de Tokens JWT
-1. **Access Token:**
-   - Vigencia: 15 minutos.
-   - Proposito: Autorizar peticiones a rutas protegidas.
-   - Transporte: Cookie HttpOnly con ruta raiz (`/`) o encabezado `Authorization: Bearer <token>`.
-2. **Refresh Token:**
-   - Vigencia: 7 dias.
-   - Proposito: Solicitar un nuevo par de tokens sin requerir que el usuario ingrese nuevamente sus credenciales.
-   - Transporte: Cookie HttpOnly restringida exclusivamente a la ruta `/api/v1/auth`.
-   - Rotacion y Revocacion: Cada solicitud a `/refresh` genera un nuevo par de tokens e invalida el anterior, almacenando el hash del nuevo refresh token en MongoDB.
-
-### Atributos de las Cookies
-- `httpOnly: true`: Inaccesible desde JavaScript en el navegador, mitigando ataques de Cross-Site Scripting (XSS).
-- `sameSite: 'strict'`: Previene el envio de cookies en peticiones de origen cruzado, mitigando ataques de Cross-Site Request Forgery (CSRF).
-- `secure: true`: Habilitado automaticamente en entornos de produccion (`NODE_ENV=production`) para transmision sobre HTTPS.
+- `name`: nombre del evento.
+- `code`: codigo alfanumerico unico (ej. `EVT-2026-201`).
+- `category`: `concierto`, `boda`, `conferencia`, `corporativo`, `festival`, `exposicion`.
+- `price`: presupuesto asignado en COP.
+- `capacity`: aforo estimado (por defecto 100).
+- `active`: estado activo/inactivo (por defecto `true`).
+- `location`: recinto o lugar del evento.
+- `date`: fecha programada.
+- `createdBy`: ID del usuario (productor) que registro el evento.
 
 ---
 
-## 3. Variables de Entorno
+## 2. Roles y Permisos (RBAC)
 
-Crear un archivo `.env` en la raiz del proyecto tomando como referencia `.env.example`:
+| Rol | Puede |
+|---|---|
+| Publico (sin token) | Ver el catalogo de eventos y el detalle de cada uno |
+| `user` | Todo lo anterior, ademas crear eventos y editar **sus propios** eventos |
+| `admin` | Todo lo anterior, ademas editar y eliminar **cualquier** evento |
 
-```env
-PORT=3000
-NODE_ENV=development
-MONGODB_URI=mongodb://localhost:27017/productora_eventos_auth
-JWT_ACCESS_SECRET=clave_secreta_para_access_tokens_productora_2026
-JWT_REFRESH_SECRET=clave_secreta_para_refresh_tokens_productora_2026
-JWT_ACCESS_EXPIRES_IN=15m
-JWT_REFRESH_EXPIRES_IN=7d
-```
+La verificacion de "dueno o admin" ocurre en `event.service.ts::update` (compara `createdBy` contra el usuario autenticado); la restriccion de "solo admin" para eliminar se aplica directamente en la ruta con el middleware `requireRole('admin')`.
 
 ---
 
-## 4. Endpoints de la API
+## 3. Endpoints de la API
 
 ### Autenticacion (`/api/v1/auth`)
 
-| Metodo | Ruta | Descripcion | Requiere Autenticacion |
+| Metodo | Ruta | Descripcion | Acceso |
 |---|---|---|---|
-| POST | `/api/v1/auth/register` | Registro de nuevos usuarios y asignacion inicial de tokens | No |
-| POST | `/api/v1/auth/login` | Autenticacion de usuario con emision de cookies | No |
-| POST | `/api/v1/auth/refresh` | Rotacion y renovacion de tokens de acceso y refresco | No (Requiere cookie de refresco) |
-| POST | `/api/v1/auth/logout` | Cierre de sesion, revocacion en BD y limpieza de cookies | Si |
-| GET | `/api/v1/auth/me` | Obtencion de los datos del usuario autenticado actual | Si |
+| POST | `/api/v1/auth/register` | Registro de nuevos usuarios | Publico (rate-limited: 5/15min) |
+| POST | `/api/v1/auth/login` | Inicio de sesion, emite `accessToken` (body) + `refreshToken` (cookie httpOnly) | Publico (rate-limited: 5/15min) |
+| POST | `/api/v1/auth/refresh` | Renueva el access token usando la cookie de refresco | Requiere cookie de refresco |
+| POST | `/api/v1/auth/logout` | Cierra sesion y limpia la cookie de refresco | Autenticado |
+| GET | `/api/v1/auth/me` | Datos del usuario autenticado | Autenticado |
 
-### Eventos Protegidos (`/api/v1/events`)
+### Usuarios (`/api/v1/users`)
 
-Todas las rutas de eventos requieren autenticacion valida via Access Token (cookie o Bearer header).
+| Metodo | Ruta | Descripcion | Acceso |
+|---|---|---|---|
+| GET | `/api/v1/users/dashboard` | Panel del usuario autenticado | Autenticado |
 
-| Metodo | Ruta | Descripcion |
-|---|---|---|
-| GET | `/api/v1/events` | Listar todos los eventos (soporta filtros por query: `?category=...&active=...`) |
-| GET | `/api/v1/events/:id` | Obtener detalle de un evento por su ObjectId de MongoDB |
-| POST | `/api/v1/events` | Crear un nuevo evento asignando automaticamente `createdBy` al usuario autenticado (201) |
-| PATCH | `/api/v1/events/:id` | Actualizar parcialmente los datos de un evento |
-| DELETE | `/api/v1/events/:id` | Eliminar un evento existente (204 No Content) |
+### Eventos (`/api/v1/events`)
+
+| Metodo | Ruta | Descripcion | Acceso |
+|---|---|---|---|
+| GET | `/api/v1/events` | Listar eventos (filtros `?category=...&active=...`) | Publico |
+| GET | `/api/v1/events/:id` | Detalle de un evento | Publico |
+| POST | `/api/v1/events` | Crear evento (asigna `createdBy` al usuario autenticado) | Autenticado |
+| PATCH | `/api/v1/events/:id` | Actualizar evento (dueno o admin; 403 si no) | Autenticado |
+| DELETE | `/api/v1/events/:id` | Eliminar evento | Solo `admin` |
 
 ---
 
-## 5. Modelos de Datos
+## 4. Capas de Seguridad Aplicadas
 
-### Usuario (`User`)
-- `name`: String (minimo 2 caracteres).
-- `email`: String unico, indexado y normalizado a minusculas.
-- `password`: String hasheado con bcrypt (oculto en consultas por defecto).
-- `role`: `'user' | 'admin' | 'producer'`.
-- `refreshToken`: String hasheado con bcrypt (oculto en consultas por defecto).
-- `createdAt` / `updatedAt`: Timestamps automaticos.
+- **Helmet:** aplicado globalmente en `app.ts` (primero en la cadena de middlewares) — agrega cabeceras como `X-Content-Type-Options: nosniff`, `X-DNS-Prefetch-Control`, `Strict-Transport-Security`, entre otras.
+- **Rate limiting:**
+  - Global: 100 peticiones / 15 min en toda la API.
+  - Auth: 5 peticiones / 15 min en `/register` y `/login` (proteccion contra fuerza bruta). Ambos exponen las cabeceras `RateLimit-*` (`draft-7`).
+- **CORS con lista blanca:** `src/config/security.ts` solo permite los origenes declarados en `ALLOWED_ORIGINS` (no usa `cors()` sin configurar ni `origin: '*'`); un origen no listado recibe un error de CORS.
+- **Sanitizacion NoSQL:** `express-mongo-sanitize` se aplica despues de parsear el body y antes de las rutas, eliminando operadores de MongoDB (`$gt`, `$ne`, etc.) inyectados en el JSON de entrada.
+- **Validacion con Zod:** los schemas de `event.schema.ts` rechazan HTML en campos de texto libre (`/^[^<>]*$/`), mitigando XSS almacenado.
+- **Sin fuga de informacion en errores:** `errorHandler.ts` nunca envia `stack traces` al cliente; los errores no controlados solo se registran en el log del servidor y responden `{ error: 'Internal server error' }`.
+- **Sin secretos hardcodeados:** `JWT_ACCESS_SECRET` y `JWT_REFRESH_SECRET` se leen de variables de entorno (`.env`, nunca commiteado); `.env.example` solo trae placeholders descriptivos.
+- **Contrasenas:** hasheadas con `bcrypt` (12 salt rounds), nunca se almacenan ni se devuelven en texto plano.
 
-### Evento (`Event`)
-- `name`: String unico y descriptivo del evento.
-- `code`: Codigo alfanumerico unico del evento (ej. `EVT-2026-101`).
-- `category`: Categoria del evento (`concierto`, `boda`, `conferencia`, `corporativo`, `festival`, `exposicion`).
-- `price`: Presupuesto asignado estrictamente en Pesos Colombianos (COP).
-- `capacity`: Aforo estimado del evento (por defecto 100).
-- `active`: Estado activo/inactivo del evento (por defecto `true`).
-- `location`: Ubicacion fisica del evento.
-- `date`: Fecha programada del evento.
-- `createdBy`: Referencia al ObjectId del usuario responsable.
-- `createdAt` / `updatedAt`: Timestamps automaticos.
+---
+
+## 5. Variables de Entorno
+
+Crear un archivo `.env` en la raiz tomando como referencia `.env.example`:
+
+```env
+PORT=3000
+MONGODB_URI=mongodb://localhost:27017/bc-express-semana-08
+JWT_ACCESS_SECRET=cambia_esto_por_un_secreto_largo_y_aleatorio_access
+JWT_REFRESH_SECRET=cambia_esto_por_un_secreto_largo_y_aleatorio_refresh
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+NODE_ENV=development
+```
 
 ---
 
 ## 6. Instrucciones de Ejecucion
 
-### Instalacion de Dependencias
 ```bash
+# 1. Instalar dependencias
 pnpm install
-```
 
-### Ejecucion con Base de Datos en Docker
-Para levantar una instancia local de MongoDB:
-```bash
+# 2. Levantar MongoDB local
 docker compose up -d
-```
 
-### Inicializacion de Datos de Prueba (Seed)
-```bash
-pnpm run seed
-```
-Usuarios creados por defecto:
-- Administrador: `admin@productora.com` (Contrasena: `Password123!`)
-- Productor: `productor@productora.com` (Contrasena: `Password123!`)
-
-### Modo Desarrollo
-```bash
+# 3. Modo desarrollo (siembra usuarios y eventos de ejemplo al arrancar)
 pnpm run dev
 ```
 
-### Compilacion a Produccion
+Usuarios de prueba creados automaticamente al iniciar el servidor por primera vez:
+- Productor: `user@productora.com` / `User1234!`
+- Coordinador (admin): `admin@productora.com` / `Admin1234!`
+
+Para verificar que el codigo cumple con TypeScript estricto:
 ```bash
 pnpm run build
-pnpm start
 ```
