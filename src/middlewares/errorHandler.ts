@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
-import { MongoServerError } from 'mongodb';
 import mongoose from 'mongoose';
 import { AppError } from '../errors/AppError';
+import { isMongoDuplicateKeyError } from '../lib/mongoErrors';
 import { logger } from '../config/logger';
 
 export function errorHandler(
@@ -49,8 +49,9 @@ export function errorHandler(
   }
 
   // 3. Error de clave duplicada en MongoDB (11000)
-  if (err instanceof MongoServerError && err.code === 11000) {
-    logger.warn(`Error de clave duplicada en MongoDB (11000): ${err.message}`);
+  if (isMongoDuplicateKeyError(err)) {
+    const message = err instanceof Error ? err.message : 'Clave duplicada';
+    logger.warn(`Error de clave duplicada en MongoDB (11000): ${message}`);
     res.status(409).json({
       error: 'Conflict',
       message: 'Ya existe un registro con ese valor único en la base de datos',
