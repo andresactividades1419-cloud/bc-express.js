@@ -1,7 +1,7 @@
-import { MongoServerError } from 'mongodb';
 import mongoose from 'mongoose';
 import { Client, IClient } from '../models/client.model';
 import { AppError } from '../errors/AppError';
+import { isMongoDuplicateKeyError } from '../lib/mongoErrors';
 import type { CreateClientDto, UpdateClientDto } from '../schemas/client.schema';
 
 export async function findAll(): Promise<IClient[]> {
@@ -28,7 +28,7 @@ export async function create(dto: CreateClientDto): Promise<IClient> {
     const client = await Client.create(dto);
     return client.toObject();
   } catch (err: unknown) {
-    if (err instanceof MongoServerError && err.code === 11000) {
+    if (isMongoDuplicateKeyError(err)) {
       throw new AppError(409, 'Ya existe un cliente registrado con ese correo electrónico');
     }
     if (err instanceof mongoose.Error.ValidationError) {
@@ -53,7 +53,7 @@ export async function update(id: string, dto: UpdateClientDto): Promise<IClient>
     if (err instanceof mongoose.Error.CastError) {
       throw new AppError(400, `ID de cliente con formato inválido: ${id}`);
     }
-    if (err instanceof MongoServerError && err.code === 11000) {
+    if (isMongoDuplicateKeyError(err)) {
       throw new AppError(409, 'Ya existe un cliente registrado con ese correo electrónico');
     }
     if (err instanceof mongoose.Error.ValidationError) {

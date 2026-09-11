@@ -1,7 +1,7 @@
-import { MongoServerError } from 'mongodb';
 import mongoose from 'mongoose';
 import { Event } from '../models/event.model';
 import { AppError } from '../errors/AppError';
+import { isMongoDuplicateKeyError } from '../lib/mongoErrors';
 import type { CreateEventDto, UpdateEventDto } from '../schemas/event.schema';
 
 export interface PaginatedResult<T> {
@@ -58,7 +58,7 @@ export async function create(dto: CreateEventDto): Promise<unknown> {
     await event.populate('client');
     return event.toObject();
   } catch (err: unknown) {
-    if (err instanceof MongoServerError && err.code === 11000) {
+    if (isMongoDuplicateKeyError(err)) {
       throw new AppError(409, 'Ya existe un evento registrado con ese código único');
     }
     if (err instanceof mongoose.Error.CastError) {
@@ -88,7 +88,7 @@ export async function update(id: string, dto: UpdateEventDto): Promise<unknown> 
     if (err instanceof mongoose.Error.CastError) {
       throw new AppError(400, `ID con formato inválido: ${id}`);
     }
-    if (err instanceof MongoServerError && err.code === 11000) {
+    if (isMongoDuplicateKeyError(err)) {
       throw new AppError(409, 'Ya existe un evento registrado con ese código único');
     }
     if (err instanceof mongoose.Error.ValidationError) {
