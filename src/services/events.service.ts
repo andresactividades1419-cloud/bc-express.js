@@ -10,7 +10,7 @@ export class EventsService {
   async getById(id: string) {
     const event = await eventsRepository.findById(id);
     if (!event) {
-      throw new AppError('Evento no encontrado', 404);
+      throw new AppError(404, 'Evento no encontrado');
     }
     return event;
   }
@@ -25,7 +25,7 @@ export class EventsService {
   async update(id: string, input: UpdateEventDto) {
     const updated = await eventsRepository.updateById(id, input);
     if (!updated) {
-      throw new AppError('Evento no encontrado', 404);
+      throw new AppError(404, 'Evento no encontrado');
     }
     return updated;
   }
@@ -33,7 +33,7 @@ export class EventsService {
   async delete(id: string) {
     const deleted = await eventsRepository.deleteById(id);
     if (!deleted) {
-      throw new AppError('Evento no encontrado', 404);
+      throw new AppError(404, 'Evento no encontrado');
     }
     return deleted;
   }
