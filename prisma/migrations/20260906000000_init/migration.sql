@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "clients" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE "clients" (
 
 -- CreateTable
 CREATE TABLE "events" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "code" TEXT NOT NULL,
     "category" TEXT NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE "events" (
     "active" BOOLEAN NOT NULL DEFAULT true,
     "location" TEXT NOT NULL,
     "date" TIMESTAMP(3) NOT NULL,
-    "clientId" INTEGER NOT NULL,
+    "clientId" UUID NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
