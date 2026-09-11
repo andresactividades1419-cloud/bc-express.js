@@ -1,28 +1,7 @@
-export interface ClientEntity {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  company?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface EventEntity {
-  id: number;
-  name: string;
-  code: string;
-  category: string;
-  price: number;
-  capacity: number;
-  active: boolean;
-  location: string;
-  date: Date;
-  clientId: number;
-  client?: ClientEntity;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Nota: los tipos de las entidades (Client, Event) NO se declaran a mano aquí.
+// Se usan directamente los tipos que genera Prisma a partir de schema.prisma
+// (import type { Client, Event } from '@prisma/client') para no duplicar el
+// modelo de datos en dos lugares distintos.
 
 export interface PaginatedResponse<T> {
   data: T[];

@@ -18,7 +18,7 @@ En esta etapa se migra la capa de persistencia desde memoria hacia una base de d
 +-----------------------------------+          +-----------------------------------+
 |              clients              |          |              events               |
 +-----------------------------------+          +-----------------------------------+
-| id: Int (PK)                      | 1      N | id: Int (PK)                      |
+| id: String (PK, UUID)             | 1      N | id: String (PK, UUID)             |
 | name: String                      |<---------| name: String                      |
 | email: String (UNIQUE)            |          | code: String (UNIQUE)             |
 | phone: String                     |          | category: String                  |
@@ -27,13 +27,14 @@ En esta etapa se migra la capa de persistencia desde memoria hacia una base de d
 | updatedAt: DateTime               |          | active: Boolean                   |
 +-----------------------------------+          | location: String                  |
                                                | date: DateTime                    |
-                                               | clientId: Int (FK -> clients.id)  |
+                                               | clientId: String (FK -> clients.id, UUID) |
                                                | createdAt: DateTime               |
                                                | updatedAt: DateTime               |
                                                +-----------------------------------+
 ```
 
 ### Caracteristicas del Modelo en `prisma/schema.prisma`
+- **Claves primarias y foraneas UUID:** `id String @id @default(uuid()) @db.Uuid` en ambas entidades, y `Event.clientId String @db.Uuid` — siguiendo la regla del bootcamp de no usar `Int @default(autoincrement())`.
 - **Restricciones Unicas (`@unique`):**
   - `Client.email`: Evita registrar clientes duplicados. Demuestra el manejo del codigo de error `P2002`.
   - `Event.code`: Codigo alfanumerico de identificacion unico del evento (ej. `EVT-2026-001`). Demuestra el manejo del codigo de error `P2002`.

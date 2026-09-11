@@ -28,7 +28,7 @@ export async function findAll(page: number, limit: number) {
   };
 }
 
-export async function findById(id: number) {
+export async function findById(id: string) {
   return prisma.event.findUnique({
     where: { id },
     include: {
@@ -77,7 +77,7 @@ export async function create(data: CreateEventDto) {
   }
 }
 
-export async function update(id: number, data: UpdateEventDto) {
+export async function update(id: string, data: UpdateEventDto) {
   try {
     return await prisma.event.update({
       where: { id },
@@ -112,7 +112,7 @@ export async function update(id: number, data: UpdateEventDto) {
   }
 }
 
-export async function remove(id: number): Promise<void> {
+export async function remove(id: string): Promise<void> {
   try {
     await prisma.event.delete({
       where: { id },

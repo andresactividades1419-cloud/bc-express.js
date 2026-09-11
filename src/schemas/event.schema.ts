@@ -46,17 +46,15 @@ export const createEventSchema = z.object({
       error: 'date debe ser una fecha válida (formato ISO 8601 ej. 2026-03-27T14:00:00Z)',
     }),
   clientId: z
-    .number({ error: 'clientId debe ser un número entero positivo' })
-    .int({ error: 'clientId debe ser un número entero' })
-    .positive({ error: 'clientId debe ser un número positivo' }),
+    .string({ error: 'clientId debe ser un texto' })
+    .uuid({ error: 'clientId debe ser un UUID válido' }),
 });
 
 export const updateEventSchema = createEventSchema.partial();
 
-export const idSchema = z.coerce
-  .number({ error: 'El ID debe ser un número' })
-  .int({ error: 'El ID debe ser un entero' })
-  .positive({ error: 'El ID debe ser un entero positivo' });
+export const idSchema = z
+  .string({ error: 'El ID debe ser un texto' })
+  .uuid({ error: 'El ID debe ser un UUID válido' });
 
 export type CreateEventDto = z.infer<typeof createEventSchema>;
 export type UpdateEventDto = z.infer<typeof updateEventSchema>;
