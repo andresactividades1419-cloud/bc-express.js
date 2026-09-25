@@ -1,24 +1,16 @@
-import { User, IUser } from '../models/user.model.js';
+import { UserModel, type IUser } from '../models/user.model.js';
 
 export async function findUserByEmail(email: string): Promise<IUser | null> {
-  return User.findOne({ email }).select('+password +refreshToken');
+  return UserModel.findOne({ email }).lean<IUser>().exec();
+}
+
+export async function createUser(
+  data: Pick<IUser, 'name' | 'email' | 'password' | 'role'>,
+): Promise<IUser> {
+  const user = new UserModel(data);
+  return user.save() as unknown as IUser;
 }
 
 export async function findUserById(id: string): Promise<IUser | null> {
-  return User.findById(id);
-}
-
-export async function createUser(data: {
-  name: string;
-  email: string;
-  password: string;
-}): Promise<IUser> {
-  return User.create(data);
-}
-
-export async function updateRefreshToken(
-  userId: string,
-  refreshToken: string | null
-): Promise<void> {
-  await User.findByIdAndUpdate(userId, { refreshToken });
+  return UserModel.findById(id).lean<IUser>().exec();
 }

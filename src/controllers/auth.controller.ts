@@ -1,71 +1,35 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import { ZodError } from 'zod';
 import * as authService from '../services/auth.service.js';
-import { registerSchema, loginSchema } from '../schemas/auth.schema.js';
-import { AppError } from '../errors/AppError.js';
+import { registerSchema, loginSchema } from '../validators/auth.schema.js';
 
-export async function register(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function registerHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { body } = registerSchema.parse({ body: req.body });
     const user = await authService.register(body);
-    res.status(201).json({ message: 'User registered', data: user });
+    res.status(201).json({ data: user });
   } catch (err) {
+    if (err instanceof ZodError) return next(err);
     next(err);
   }
 }
 
-export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function loginHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { body } = loginSchema.parse({ body: req.body });
-    const { accessToken, refreshToken, role } = await authService.login(body);
-
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    res.json({ accessToken, role });
+    const tokens = await authService.login(body);
+    res.status(200).json(tokens);
   } catch (err) {
+    if (err instanceof ZodError) return next(err);
     next(err);
   }
 }
 
-export async function refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function meHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const token = req.cookies?.refreshToken as string | undefined;
-    if (!token) throw new AppError(401, 'Refresh token missing');
-
-    const tokens = await authService.refreshTokens(token);
-    res.cookie('refreshToken', tokens.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    res.json({ accessToken: tokens.accessToken });
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function logout(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    if (!req.user) throw new AppError(401, 'Not authenticated');
-    await authService.logout(req.user.sub);
-    res.clearCookie('refreshToken');
-    res.json({ message: 'Logged out' });
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function me(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    if (!req.user) throw new AppError(401, 'Not authenticated');
-    const user = await authService.getMe(req.user.sub);
-    res.json({ data: user });
+    const user = res.locals['user'] as { sub: string };
+    const data = await authService.getMe(user.sub);
+    res.status(200).json({ data });
   } catch (err) {
     next(err);
   }

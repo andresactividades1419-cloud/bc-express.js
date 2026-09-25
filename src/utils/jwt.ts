@@ -1,33 +1,13 @@
 import jwt from 'jsonwebtoken';
+import { env } from '../config/env.js';
+import type { TokenPayload } from '../types/index.js';
 
-export interface JwtPayload {
-  sub: string;
-  email: string;
-  role: string;
+export function signAccessToken(payload: TokenPayload): string {
+  return jwt.sign(payload, env.JWT_ACCESS_SECRET, {
+    expiresIn: env.JWT_ACCESS_EXPIRES_IN,
+  } as jwt.SignOptions);
 }
 
-export function signAccessToken(payload: JwtPayload): string {
-  const secret = process.env.JWT_ACCESS_SECRET;
-  const expiresIn = process.env.JWT_ACCESS_EXPIRES_IN ?? '15m';
-  if (!secret) throw new Error('JWT_ACCESS_SECRET is not defined');
-  return jwt.sign(payload, secret, { expiresIn } as jwt.SignOptions);
-}
-
-export function verifyAccessToken(token: string): JwtPayload {
-  const secret = process.env.JWT_ACCESS_SECRET;
-  if (!secret) throw new Error('JWT_ACCESS_SECRET is not defined');
-  return jwt.verify(token, secret) as JwtPayload;
-}
-
-export function signRefreshToken(userId: string): string {
-  const secret = process.env.JWT_REFRESH_SECRET;
-  const expiresIn = process.env.JWT_REFRESH_EXPIRES_IN ?? '7d';
-  if (!secret) throw new Error('JWT_REFRESH_SECRET is not defined');
-  return jwt.sign({ sub: userId }, secret, { expiresIn } as jwt.SignOptions);
-}
-
-export function verifyRefreshToken(token: string): { sub: string } {
-  const secret = process.env.JWT_REFRESH_SECRET;
-  if (!secret) throw new Error('JWT_REFRESH_SECRET is not defined');
-  return jwt.verify(token, secret) as { sub: string };
+export function verifyAccessToken(token: string): TokenPayload {
+  return jwt.verify(token, env.JWT_ACCESS_SECRET) as TokenPayload;
 }

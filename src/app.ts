@@ -1,39 +1,39 @@
-import 'dotenv/config';
-import express from 'express';
-import cookieParser from 'cookie-parser';
-import helmet from 'helmet';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
-import authRoutes from './routes/auth.routes.js';
-import userRoutes from './routes/user.routes.js';
-import eventRoutes from './routes/event.routes.js';
-import { errorHandler } from './middlewares/errorHandler.js';
-import { notFound } from './middlewares/notFound.js';
-import { globalLimiter, corsOptions } from './config/security.js';
+import { authRouter } from './routes/auth.routes.js';
+import { eventsRouter } from './routes/events.routes.js';
+import { errorHandler } from './middlewares/error.middleware.js';
 
-const app = express();
+// Importar { app } en los tests — NUNCA server.ts
 
-// Capas de seguridad — el orden importa
+const corsOptions = {
+  origin: (process.env['CORS_ORIGINS'] ?? '').split(',').filter(Boolean),
+};
+
+export const app = express();
+
 app.use(helmet());
-app.use(globalLimiter);
-// Express 5 (path-to-regexp v8) ya no acepta el comodin '*' suelto —
-// requiere una ruta con nombre o una regex. Se usa una regex para
-// interceptar el preflight de CORS en cualquier ruta.
-app.options(/.*/, cors(corsOptions)); // preflight
 app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
-// Body parsing
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+  }),
+);
+
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
 
-// express-mongo-sanitize es un middleware pensado para Express 4: intenta
-// reasignar req.query, que en Express 5 es una propiedad de solo lectura
-// (getter sin setter), y sin este parche el proceso crashea con
-// "Cannot set property query of #<IncomingMessage> which has only a getter".
-// Se redefine req.query como escribible ANTES de sanitizar, sin cambiar su
-// valor ni su comportamiento para el resto de la app.
-app.use((req, _res, next) => {
+// express-mongo-sanitize (v2, pensado para Express 4) intenta reasignar
+// req.query, que en Express 5 es de solo lectura. Se redefine como
+// escribible antes de aplicar el middleware.
+app.use((req: Request, _res: Response, next: NextFunction) => {
   Object.defineProperty(req, 'query', {
     ...Object.getOwnPropertyDescriptor(req, 'query'),
     value: req.query,
@@ -42,22 +42,17 @@ app.use((req, _res, next) => {
   });
   next();
 });
-
-// Sanitizar entradas DESPUES de parsear, ANTES de las rutas
 app.use(mongoSanitize());
 
-// Health check
-app.get('/api/v1/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/health', (_req: Request, res: Response) => {
+  res.status(200).json({ status: 'ok' });
 });
 
-// Rutas
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/users', userRoutes);
-app.use('/api/v1/events', eventRoutes);
+app.use('/api/auth', authRouter);
+app.use('/api/events', eventsRouter);
 
-// Manejo de errores (siempre al final)
-app.use(notFound);
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({ error: 'Route not found' });
+});
+
 app.use(errorHandler);
-
-export { app };
